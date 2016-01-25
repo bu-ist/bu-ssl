@@ -1,0 +1,51 @@
+[
+    {
+        "name": "willwashburn/phpamo",
+        "version": "0.0.1",
+        "version_normalized": "0.0.1.0",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/willwashburn/Phpamo.git",
+            "reference": "96b6c80df3069e496ae0e18d6bcecafd313f331e"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/willwashburn/Phpamo/zipball/96b6c80df3069e496ae0e18d6bcecafd313f331e",
+            "reference": "96b6c80df3069e496ae0e18d6bcecafd313f331e",
+            "shasum": ""
+        },
+        "require": {
+            "php": ">=5.3.0"
+        },
+        "require-dev": {
+            "mockery/mockery": "~0.9",
+            "phpunit/phpunit": "~4.0"
+        },
+        "time": "2015-02-11 14:56:32",
+        "type": "library",
+        "installation-source": "dist",
+        "autoload": {
+            "psr-4": {
+                "WillWashburn\\Camo\\": "src/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "authors": [
+            {
+                "name": "Will Washburn",
+                "email": "will.washburn@gmail.com"
+            }
+        ],
+        "description": "A PHP client for Camo - the SSL image proxy.",
+        "keywords": [
+            "atmos camo",
+            "camo",
+            "proxy",
+            "ssl",
+            "ssl proxy"
+        ]
+    }
+]

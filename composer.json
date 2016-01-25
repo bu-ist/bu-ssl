@@ -1,0 +1,5 @@
+{
+    "require": {
+        "willwashburn/phpamo": "0.0.1.*"
+    }
+}

@@ -1,0 +1,66 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "This file is @generated automatically"
+    ],
+    "hash": "7f0f9a5915bc03d670bd1ec1db24aaf2",
+    "content-hash": "642acadcb3049663124f60a8cad110e5",
+    "packages": [
+        {
+            "name": "willwashburn/phpamo",
+            "version": "0.0.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/willwashburn/Phpamo.git",
+                "reference": "96b6c80df3069e496ae0e18d6bcecafd313f331e"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/willwashburn/Phpamo/zipball/96b6c80df3069e496ae0e18d6bcecafd313f331e",
+                "reference": "96b6c80df3069e496ae0e18d6bcecafd313f331e",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.0"
+            },
+            "require-dev": {
+                "mockery/mockery": "~0.9",
+                "phpunit/phpunit": "~4.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "WillWashburn\\Camo\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Will Washburn",
+                    "email": "will.washburn@gmail.com"
+                }
+            ],
+            "description": "A PHP client for Camo - the SSL image proxy.",
+            "keywords": [
+                "atmos camo",
+                "camo",
+                "proxy",
+                "ssl",
+                "ssl proxy"
+            ],
+            "time": "2015-02-11 14:56:32"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": []
+}
