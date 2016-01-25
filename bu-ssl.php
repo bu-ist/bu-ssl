@@ -34,7 +34,7 @@ require_once 'vendor/willwashburn/phpamo/src/Client.php';
 class SSL {
 
 	private static $camo_key	= 'CAMO_KEY_HERE'; // @see: https://github.com/atmos/camo
-	private static $camo_domain 	= 'bu-camo.herokuapp.com';
+	private static $camo_domain 	= 'your-app-name.herokuapp.com';
 
 	public static $set_meta_tags 	= TRUE;
 
