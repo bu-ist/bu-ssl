@@ -33,62 +33,62 @@ require_once 'vendor/willwashburn/phpamo/src/Client.php';
 
 class SSL {
 
-	private static $camo_key	= 'CAMO_KEY_HERE'; // @see: https://github.com/atmos/camo
-	private static $camo_domain 	= 'your-app-name.herokuapp.com';
+        private static $camo_key        = 'CAMO_KEY_HERE'; // @see: https://github.com/atmos/camo
+        private static $camo_domain     = 'your-app-name.herokuapp.com';
 
-	public static $set_meta_tags 	= TRUE;
+        public static $set_meta_tags    = TRUE;
 
-	// regex adopted from @imme_emosol https://mathiasbynens.be/demo/url-regex
-	public static $http_img_regex 	= '@<img.*src.*(http:\/\/(-\.)?([^\s/?\.#-]+\.?)+(/[^\s]*)?)"|\'.+>@iS';
+        // regex adopted from @imme_emosol https://mathiasbynens.be/demo/url-regex
+        public static $http_img_regex   = '@<img.*src.*(http:\/\/(-\.)?([^\s/?\.#-]+\.?)+(/[^\s]*)?)"|\'.+>@iS';
 
 
-	function __construct() {
+        function __construct() {
 
-		// add_action( 'init', 			array( $this, 'init' ) );
-		add_action( 'wp_head', 			array( $this, 'add_meta' ) );
-		add_action( 'template_redirect', 	array( $this, 'do_redirect' ) );
+                // add_action( 'init',                  array( $this, 'init' ) );
+                add_action( 'wp_head',                  array( $this, 'add_meta' ) );
+                add_action( 'template_redirect',        array( $this, 'do_redirect' ) );
 
-		add_filter( 'wp_headers', 		array( $this, 'add_headers' ) );
-		add_filter( 'the_content',		array( $this, 'proxy_insecure_images' ), 999 );
-	}
+                add_filter( 'wp_headers',               array( $this, 'add_headers' ) );
+                add_filter( 'the_content',              array( $this, 'proxy_insecure_images' ), 999 );
+        }
 
-	public static function init(){
+        public static function init(){
 
-	}
+        }
 
-	public static function is_debug(){
-		return ( defined( 'BU_SSL_DEBUG' ) && BU_SSL_DEBUG );
-	}
+        public static function is_debug(){
+                return ( defined( 'BU_SSL_DEBUG' ) && BU_SSL_DEBUG );
+        }
 
-	public static function add_meta(){
-		if( self::$set_meta_tags ){
-			echo '<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />'."\n";
-		}
-	}
+        public static function add_meta(){
+                if( self::$set_meta_tags ){
+                        echo '<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />'."\n";
+                }
+        }
 
-	public static function add_headers( $headers ){
-		$headers['Content-Security-Policy'] = 'upgrade-insecure-requests';
-		return $headers;
-	}
+        public static function add_headers( $headers ){
+                $headers['Content-Security-Policy'] = 'upgrade-insecure-requests';
+                return $headers;
+        }
 
-	public static function do_redirect(){
-		if( !is_ssl() ){
-			wp_redirect( site_url( $_SERVER['REQUEST_URI'], 'https' ) );
-		}
-	}
+        public static function do_redirect(){
+                if( !is_ssl() ){
+                        wp_redirect( site_url( $_SERVER['REQUEST_URI'], 'https' ) );
+                }
+        }
 
-	public function proxy_insecure_images( $content ){
-		$camo = new \WillWashburn\Camo\Client();
-		$camo->setDomain( self::$camo_domain );
-		$camo->setCamoKey( self::$camo_key );
-		
-		preg_match_all( self::$http_img_regex, $content, $urls );
+        public function proxy_insecure_images( $content ){
+                $camo = new \WillWashburn\Camo\Client();
+                $camo->setDomain( self::$camo_domain );
+                $camo->setCamoKey( self::$camo_key );
+                
+                preg_match_all( self::$http_img_regex, $content, $urls );
 
-		foreach ( $urls[1] as $k => $u ) {
-			$content = str_replace( $u, $camo->proxy( $u ), $content );
-		}
-		return $content;
-	}
+                foreach ( $urls[1] as $k => $u ) {
+                        $content = str_replace( $u, $camo->proxy( $u ), $content );
+                }
+                return $content;
+        }
 } 
 $bu_ssl = new SSL();
 
