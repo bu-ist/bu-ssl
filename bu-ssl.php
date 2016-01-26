@@ -47,6 +47,7 @@ class SSL {
                 // add_action( 'init',                  array( $this, 'init' ) );
                 add_action( 'wp_head',                  array( $this, 'add_meta' ) );
                 add_action( 'template_redirect',        array( $this, 'do_redirect' ) );
+                add_action( 'edit_form_top',            array( $this, 'maybe_editor_warning' ) );
 
                 add_filter( 'wp_headers',               array( $this, 'add_headers' ) );
                 add_filter( 'the_content',              array( $this, 'proxy_insecure_images' ), 999 );
@@ -77,17 +78,38 @@ class SSL {
                 }
         }
 
+        public function search_for_insecure_images( $content ){
+            preg_match_all( self::$http_img_regex, $content, $urls, PREG_SET_ORDER );
+            return $urls;
+        }
+
+        public function has_insecure_images( $content ){
+            $urls = self::search_for_insecure_images( $content );
+            return ( 0 !== count( $urls[0] ) );
+        }
+
         public function proxy_insecure_images( $content ){
                 $camo = new \WillWashburn\Camo\Client();
                 $camo->setDomain( self::$camo_domain );
                 $camo->setCamoKey( self::$camo_key );
                 
-                preg_match_all( self::$http_img_regex, $content, $urls );
+                $urls = self::search_for_insecure_images( $content );
 
-                foreach ( $urls[1] as $k => $u ) {
-                        $content = str_replace( $u, $camo->proxy( $u ), $content );
+                foreach ( $urls as $k => $u ) {
+                        $content = str_replace( $u[1], $camo->proxy( $u[1] ), $content );
                 }
+
                 return $content;
+        }
+
+        public function maybe_editor_warning(){
+            global $post;
+            if( self::has_insecure_images( $post->post_content ) ){
+                printf( 
+                    '<div class="notice notice-error"><p>%s</p></div>',
+                     __('This post contains images loaded over an insecure connection. These images will be filtered through a <a href="#">secure image proxy</a>.') 
+                    );
+            }
         }
 } 
 $bu_ssl = new SSL();
