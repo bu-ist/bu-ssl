@@ -114,7 +114,7 @@ class SSL {
             if( self::has_insecure_images( $post->post_content ) ){
                 printf( 
                     '<div class="notice notice-error"><p>%s</p></div>',
-                     __('This post contains images loaded over an insecure connection. These images will be filtered through a <a href="#">secure image proxy</a>.') 
+                     __('&#x1F513; This post contains images loaded over an insecure connection. These images will be filtered through a <a href="#">secure image proxy</a>.') 
                     );
             }
         }
