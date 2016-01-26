@@ -29,12 +29,19 @@ namespace BU\WordPress\Plugins;
 define( 'BU_SSL_VERSION', '0.1' );
 // define( 'BU_SSL_DEBUG', true );
 
+/* 
+ * Camo Image Proxy
+ * @see: https://github.com/atmos/camo
+ * @see: https://github.com/willwashburn/Phpamo
+*/
+define( 'BU_SSL_CAMO_KEY', 'YOUR_CAMO_KEY_HERE' );
+define( 'BU_SSL_CAMO_DOMAIN', 'sample-camo-domain.herokuapp.com' );
 require_once 'vendor/willwashburn/phpamo/src/Client.php';
 
 class SSL {
 
-        private static $camo_key        = 'CAMO_KEY_HERE'; // @see: https://github.com/atmos/camo
-        private static $camo_domain     = 'your-app-name.herokuapp.com';
+        private static $camo_key        = BU_SSL_CAMO_KEY; 
+        private static $camo_domain     = BU_SSL_CAMO_DOMAIN;
 
         public static $set_meta_tags    = TRUE;
 
