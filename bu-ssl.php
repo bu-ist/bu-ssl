@@ -34,8 +34,14 @@ define( 'BU_SSL_VERSION', '0.1' );
  * @see: https://github.com/atmos/camo
  * @see: https://github.com/willwashburn/Phpamo
 */
-define( 'BU_SSL_CAMO_KEY', 'YOUR_CAMO_KEY_HERE' );
-define( 'BU_SSL_CAMO_DOMAIN', 'sample-camo-domain.herokuapp.com' );
+if( ! defined( 'BU_SSL_CAMO_KEY' ) ){
+    define( 'BU_SSL_CAMO_KEY', 'YOUR_CAMO_KEY_HERE' );
+}
+
+if( ! defined( 'BU_SSL_CAMO_DOMAIN' ) ){
+    define( 'BU_SSL_CAMO_DOMAIN', 'sample-camo-domain.herokuapp.com' );
+}
+
 require_once 'vendor/willwashburn/phpamo/src/Client.php';
 
 class SSL {
