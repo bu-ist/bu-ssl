@@ -43,6 +43,7 @@ class SSL {
         private static $camo_key        = BU_SSL_CAMO_KEY; 
         private static $camo_domain     = BU_SSL_CAMO_DOMAIN;
 
+        public static $always_redirect  = FALSE;
         public static $set_meta_tags    = TRUE;
 
         // regex adopted from @imme_emosol https://mathiasbynens.be/demo/url-regex
@@ -80,8 +81,8 @@ class SSL {
         }
 
         public static function do_redirect(){
-                if( !is_ssl() ){
-                        wp_redirect( site_url( $_SERVER['REQUEST_URI'], 'https' ) );
+                if( self::$always_redirect && !is_ssl() ){
+                    wp_redirect( site_url( $_SERVER['REQUEST_URI'], 'https' ) );
                 }
         }
 
