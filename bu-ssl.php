@@ -102,7 +102,8 @@ class SSL {
             return ( 0 !== count( $urls[0] ) );
         }
 
-        public function proxy_insecure_images( $content ){
+        public function proxy_insecure_images( $content, $force_ssl=false ){
+            if( is_ssl() || $force_ssl ){
                 $camo = new \WillWashburn\Camo\Client();
                 $camo->setDomain( self::$camo_domain );
                 $camo->setCamoKey( self::$camo_key );
@@ -112,8 +113,9 @@ class SSL {
                 foreach ( $urls as $k => $u ) {
                         $content = str_replace( $u[1], $camo->proxy( $u[1] ), $content );
                 }
+            }
 
-                return $content;
+            return $content;
         }
 
         public function maybe_editor_warning(){
