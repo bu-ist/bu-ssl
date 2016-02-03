@@ -46,87 +46,87 @@ require_once 'vendor/willwashburn/phpamo/src/Client.php';
 
 class SSL {
 
-        private static $camo_key        = BU_SSL_CAMO_KEY; 
-        private static $camo_domain     = BU_SSL_CAMO_DOMAIN;
+    private static $camo_key        = BU_SSL_CAMO_KEY; 
+    private static $camo_domain     = BU_SSL_CAMO_DOMAIN;
 
-        public static $always_redirect  = FALSE;
-        public static $set_meta_tags    = TRUE;
+    public static $always_redirect  = FALSE;
+    public static $set_meta_tags    = TRUE;
 
-        // regex adopted from @imme_emosol https://mathiasbynens.be/demo/url-regex
-        public static $http_img_regex   = '@<img.*src.*(http:\/\/(-\.)?([^\s/?\.#-]+\.?)+(/[^\s]*)?)"|\'.+>@iS';
+    // regex adopted from @imme_emosol https://mathiasbynens.be/demo/url-regex
+    public static $http_img_regex   = '@<img.*src.*(http:\/\/(-\.)?([^\s/?\.#-]+\.?)+(/[^\s]*)?)"|\'.+>@iS';
 
 
-        function __construct() {
+    function __construct() {
 
-                // add_action( 'init',                  array( $this, 'init' ) );
-                add_action( 'wp_head',                  array( $this, 'add_meta' ) );
-                add_action( 'template_redirect',        array( $this, 'do_redirect' ) );
-                add_action( 'edit_form_top',            array( $this, 'maybe_editor_warning' ) );
+        // add_action( 'init',                  array( $this, 'init' ) );
+        add_action( 'wp_head',                  array( $this, 'add_meta' ) );
+        add_action( 'template_redirect',        array( $this, 'do_redirect' ) );
+        add_action( 'edit_form_top',            array( $this, 'maybe_editor_warning' ) );
 
-                add_filter( 'wp_headers',               array( $this, 'add_headers' ) );
-                add_filter( 'the_content',              array( $this, 'proxy_insecure_images' ), 999 );
+        add_filter( 'wp_headers',               array( $this, 'add_headers' ) );
+        add_filter( 'the_content',              array( $this, 'proxy_insecure_images' ), 999 );
+    }
+
+    public static function init(){
+
+    }
+
+    public static function is_debug(){
+            return ( defined( 'BU_SSL_DEBUG' ) && BU_SSL_DEBUG );
+    }
+
+    public static function add_meta(){
+        if( self::$set_meta_tags ){
+                echo '<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />'."\n";
         }
+    }
 
-        public static function init(){
+    public static function add_headers( $headers ){
+        $headers['Content-Security-Policy'] = 'upgrade-insecure-requests';
+        return $headers;
+    }
 
+    public static function do_redirect(){
+        if( self::$always_redirect && !is_ssl() ){
+            wp_redirect( site_url( $_SERVER['REQUEST_URI'], 'https' ) );
         }
+    }
 
-        public static function is_debug(){
-                return ( defined( 'BU_SSL_DEBUG' ) && BU_SSL_DEBUG );
-        }
+    public function search_for_insecure_images( $content ){
+        preg_match_all( self::$http_img_regex, $content, $urls, PREG_SET_ORDER );
+        return $urls;
+    }
 
-        public static function add_meta(){
-                if( self::$set_meta_tags ){
-                        echo '<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />'."\n";
-                }
-        }
+    public function has_insecure_images( $content ){
+        $urls = self::search_for_insecure_images( $content );
+        return ( 0 !== count( $urls[0] ) );
+    }
 
-        public static function add_headers( $headers ){
-                $headers['Content-Security-Policy'] = 'upgrade-insecure-requests';
-                return $headers;
-        }
-
-        public static function do_redirect(){
-                if( self::$always_redirect && !is_ssl() ){
-                    wp_redirect( site_url( $_SERVER['REQUEST_URI'], 'https' ) );
-                }
-        }
-
-        public function search_for_insecure_images( $content ){
-            preg_match_all( self::$http_img_regex, $content, $urls, PREG_SET_ORDER );
-            return $urls;
-        }
-
-        public function has_insecure_images( $content ){
+    public function proxy_insecure_images( $content, $force_ssl=false ){
+        if( is_ssl() || $force_ssl ){
+            $camo = new \WillWashburn\Camo\Client();
+            $camo->setDomain( self::$camo_domain );
+            $camo->setCamoKey( self::$camo_key );
+            
             $urls = self::search_for_insecure_images( $content );
-            return ( 0 !== count( $urls[0] ) );
-        }
 
-        public function proxy_insecure_images( $content, $force_ssl=false ){
-            if( is_ssl() || $force_ssl ){
-                $camo = new \WillWashburn\Camo\Client();
-                $camo->setDomain( self::$camo_domain );
-                $camo->setCamoKey( self::$camo_key );
-                
-                $urls = self::search_for_insecure_images( $content );
-
-                foreach ( $urls as $k => $u ) {
-                        $content = str_replace( $u[1], $camo->proxy( $u[1] ), $content );
-                }
-            }
-
-            return $content;
-        }
-
-        public function maybe_editor_warning(){
-            global $post;
-            if( self::has_insecure_images( $post->post_content ) ){
-                printf( 
-                    '<div class="notice notice-error"><p>%s</p></div>',
-                     __('&#x1F513; This post contains images loaded over an insecure connection. These images will be filtered through a <a href="#">secure image proxy</a>.') 
-                    );
+            foreach ( $urls as $k => $u ) {
+                    $content = str_replace( $u[1], $camo->proxy( $u[1] ), $content );
             }
         }
+
+        return $content;
+    }
+
+    public function maybe_editor_warning(){
+        global $post;
+        if( self::has_insecure_images( $post->post_content ) ){
+            printf( 
+                '<div class="notice notice-error"><p>%s</p></div>',
+                 __('&#x1F513; This post contains images loaded over an insecure connection. These images will be filtered through a <a href="#">secure image proxy</a>.') 
+            );
+        }
+    }
 } 
 $bu_ssl = new SSL();
 
