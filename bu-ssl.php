@@ -62,7 +62,6 @@ class SSL {
 
 
     function __construct() {
-        // add_action( 'init',                  array( $this, 'init' ) );
         add_action( 'wp_head',                  array( $this, 'add_meta' ) );
         add_action( 'template_redirect',        array( $this, 'do_redirect' ) );
         add_action( 'edit_form_top',            array( $this, 'maybe_editor_warning' ) );
@@ -70,10 +69,6 @@ class SSL {
 
         add_filter( 'wp_headers',               array( $this, 'add_headers' ) );
         add_filter( 'the_content',              array( $this, 'proxy_insecure_images' ), 999 );
-    }
-
-    public static function init(){
-
     }
 
     public static function is_debug(){
