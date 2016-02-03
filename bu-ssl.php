@@ -62,7 +62,6 @@ class SSL {
 
 
     function __construct() {
-
         // add_action( 'init',                  array( $this, 'init' ) );
         add_action( 'wp_head',                  array( $this, 'add_meta' ) );
         add_action( 'template_redirect',        array( $this, 'do_redirect' ) );
@@ -122,7 +121,7 @@ class SSL {
             $urls = self::search_for_insecure_images( $content );
 
             foreach ( $urls as $k => $u ) {
-                    $content = str_replace( $u[1], $camo->proxy( $u[1] ), $content );
+                $content = str_replace( $u[1], $camo->proxy( $u[1] ), $content );
             }
         }
 
