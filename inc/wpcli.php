@@ -8,7 +8,7 @@ class SSL_CLI extends WP_CLI_Command {
     }
 
     /**
-     * Updates all postmeta on a site.
+     * Find insecure images & update postmeta
      * 
      * ## OPTIONS
      * 
@@ -16,11 +16,11 @@ class SSL_CLI extends WP_CLI_Command {
      * 
      * ## EXAMPLES
      * 
-     *     wp bu-ssl updatemeta --site=103
+     *     wp bu-ssl findimages --site=103
      *
      * @synopsis --site=<site_id> [--ssldebug]
      */
-    function updatemeta( $args, $assoc_args ) {
+    function findimages( $args, $assoc_args ) {
 
         switch_to_blog( $assoc_args['site'] );
         
@@ -38,14 +38,19 @@ class SSL_CLI extends WP_CLI_Command {
         if ( $postids ) {
             foreach ( $postids as $id ){ 
                 $post = get_post( $id );
-                $content = str_replace( get_site_url( null, null, 'http' ), get_site_url( null, null, 'relative' ), $post->post_content );
 
-                if( $this->ssl->has_insecure_images( $content ) ){
-                    $urls = $this->ssl->update_post( $id );
-                    $debug = ( isset( $assoc_args['ssldebug'] ) ) ? "\n" . var_export( $urls, true ) . "\n" : '';
+                if( $urls = $this->ssl->has_insecure_images( $id ) ){
+                    $debug = '';
 
-                    WP_CLI::success( sprintf( 
-                        "#%d '%s' (%d updated) - %s", 
+                    if( isset( $assoc_args['ssldebug'] ) ){
+                        $content = str_replace( get_site_url( null, null, 'http' ), get_site_url( null, null, 'relative' ), $post->post_content );
+                        $debug = "\n" . var_export( $urls, true ) . "\n";
+                    }
+                    
+                    $this->ssl->do_update_postmeta( $id, $urls );
+
+                    WP_CLI::warning( sprintf( 
+                        "#%d '%s' - %d insecure image(s)", 
                         $id, 
                         $post->post_title,
                         count( $urls ), 

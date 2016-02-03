@@ -62,17 +62,17 @@ class SSL {
 
 
     function __construct() {
-        add_action( 'wp_head',                  array( $this, 'add_meta' ) );
-        add_action( 'template_redirect',        array( $this, 'do_redirect' ) );
-        add_action( 'edit_form_top',            array( $this, 'maybe_editor_warning' ) );
-        add_action( 'save_post',                array( $this, 'update_post' ) );
+        add_action( 'wp_head',                      array( $this, 'add_meta' ) );
+        add_action( 'template_redirect',            array( $this, 'do_redirect' ) );
+        add_action( 'edit_form_top',                array( $this, 'maybe_editor_warning' ) );
+        add_action( 'save_post',                    array( $this, 'update_post' ) );
+        add_action( 'manage_posts_custom_column',   array( $this, 'display_posts_column_ssl_status' ), 10, 2 );
+        add_action( 'manage_pages_custom_column',   array( $this, 'display_posts_column_ssl_status' ), 10, 2 );
 
-        add_filter( 'wp_headers',               array( $this, 'add_headers' ) );
-        add_filter( 'the_content',              array( $this, 'proxy_insecure_images' ), 999 );
-    }
-
-    public static function is_debug(){
-            return ( defined( 'BU_SSL_DEBUG' ) && BU_SSL_DEBUG );
+        add_filter( 'wp_headers',                   array( $this, 'add_headers' ) );
+        add_filter( 'the_content',                  array( $this, 'proxy_insecure_images' ), 999 );
+        add_filter( 'manage_posts_columns',         array( $this, 'add_posts_column_ssl_status' ) );
+        add_filter( 'manage_pages_columns',         array( $this, 'add_posts_column_ssl_status' ) );
     }
 
     public static function add_meta(){
@@ -91,6 +91,27 @@ class SSL {
             wp_redirect( site_url( $_SERVER['REQUEST_URI'], 'https' ) );
         }
     }
+    
+    public static function add_posts_column_ssl_status( $columns ) {
+        return array_merge( $columns, 
+            array( 'bu-ssl' => __( 'SSL', 'bu-ssl' ) ) );
+    }
+
+    public static function display_posts_column_ssl_status( $column, $post_id ) {
+        if ($column == 'bu-ssl'){
+            if( count( self::has_insecure_images( $post_id ) ) ){
+                echo "&#10071;";
+            } else {
+                echo "&#9989;";
+            }
+        }
+    }
+    
+    public function search_for_insecure_images_by_post( $post_ID ){
+        $post = get_post( $post_ID );
+        $content = str_replace( get_site_url( null, null, 'http' ), get_site_url( null, null, 'relative' ), $post->post_content );
+        return self::search_for_insecure_images( $content );
+    }
 
     public function search_for_insecure_images( $content ){
         preg_match_all( self::$http_img_regex, $content, $urls, PREG_SET_ORDER );
@@ -102,9 +123,16 @@ class SSL {
         return $urls;
     }
 
-    public function has_insecure_images( $content ){
-        $urls = self::search_for_insecure_images( $content );
-        return ( 0 !== count( $urls[0] ) );
+    public function has_insecure_images( $post_ID ){
+        $urls = get_post_meta( $post_ID, self::$post_meta_key, true );
+
+        if( '' === $urls ){
+            $urls = self::search_for_insecure_images_by_post( $post_ID );
+        }
+
+        self::do_update_postmeta( $post_ID, $urls );
+
+        return $urls;
     }
 
     public function proxy_insecure_images( $content, $force_ssl=false ){
@@ -129,29 +157,27 @@ class SSL {
         }
 
         $post = get_post( $post_ID );   
-
         $content = str_replace( get_site_url( null, null, 'http' ), get_site_url( null, null, 'relative' ), $post->post_content );     
-        $urls = self::search_for_insecure_images( $content );
 
-        if( count( $urls ) ){
-            update_post_meta( $post_ID, self::$post_meta_key, $urls );
-        } else {
-            delete_post_meta( $post_ID, self::$post_meta_key );   
+        if( $urls = self::has_insecure_images( $post_ID ) ){
+            self::do_update_postmeta( $post_ID, $urls );
         }
 
         return $urls;
     }
 
+    public function do_update_postmeta( $post_ID, $urls ){
+        if( count( $urls ) ){
+            update_post_meta( $post_ID, self::$post_meta_key, $urls );
+        } else {
+            delete_post_meta( $post_ID, self::$post_meta_key );   
+        }
+    }
+
     public function maybe_editor_warning(){
         global $post;
-        
-        $urls = get_post_meta( $post->ID, self::$post_meta_key, true );
 
-        if( empty( $urls ) ){
-            $urls = self::update_post( $post->ID );
-        }
-
-        if( count( $urls ) ){
+        if( count( self::has_insecure_images( $post->ID ) ) ){
             printf( 
                 '<div class="notice notice-error"><p>%s</p></div>',
                  __('&#x1F513; This post contains images loaded over an insecure connection. These images will be filtered through a <a href="#">secure image proxy</a>.') 
