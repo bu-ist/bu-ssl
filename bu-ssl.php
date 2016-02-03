@@ -94,16 +94,12 @@ class SSL {
     
     public static function add_posts_column_ssl_status( $columns ) {
         return array_merge( $columns, 
-            array( 'bu-ssl' => __( 'SSL', 'bu-ssl' ) ) );
+            array( 'bu-ssl' => __( 'SSL-ready', 'bu-ssl' ) ) );
     }
 
-    public static function display_posts_column_ssl_status( $column, $post_id ) {
+    public static function display_posts_column_ssl_status( $column, $post_ID ) {
         if ($column == 'bu-ssl'){
-            if( count( self::has_insecure_images( $post_id ) ) ){
-                echo "&#10071;";
-            } else {
-                echo "&#9989;";
-            }
+            echo ( count( self::has_insecure_images( $post_ID ) ) ) ? "&#10071;" : "&#9989;";
         }
     }
     
@@ -147,7 +143,6 @@ class SSL {
                 $content = str_replace( $u[1], $camo->proxy( $u[1] ), $content );
             }
         }
-
         return $content;
     }
 
@@ -157,7 +152,12 @@ class SSL {
         }
 
         $post = get_post( $post_ID );   
-        $content = str_replace( get_site_url( null, null, 'http' ), get_site_url( null, null, 'relative' ), $post->post_content );     
+
+        $content = str_replace( 
+            get_site_url( null, null, 'http' ), 
+            get_site_url( null, null, 'relative' ), 
+            $post->post_content 
+        );     
 
         if( $urls = self::has_insecure_images( $post_ID ) ){
             self::do_update_postmeta( $post_ID, $urls );

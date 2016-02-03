@@ -58,6 +58,7 @@ class SSL_CLI extends WP_CLI_Command {
                     ) . $debug );
                 }
             }
+            WP_CLI::success( sprintf( "%d posts scanned.", count( $postids ) ) );
         }
 
         restore_current_blog();
