@@ -16,14 +16,11 @@ class SSL_CLI extends WP_CLI_Command {
      * 
      * ## EXAMPLES
      * 
-     *     wp bu-ssl findimages --site=103
+     *     wp bu-ssl findimages --ssldebug
      *
-     * @synopsis --site=<site_id> [--ssldebug]
+     * @synopsis [--ssldebug]
      */
-    function findimages( $args, $assoc_args ) {
-
-        switch_to_blog( $assoc_args['site'] );
-        
+    function findimages( $args, $assoc_args ) {        
         global $wpdb;
 
         $postids = get_posts( array(
@@ -60,8 +57,6 @@ class SSL_CLI extends WP_CLI_Command {
             }
             WP_CLI::success( sprintf( "%d posts scanned.", count( $postids ) ) );
         }
-
-        restore_current_blog();
     }
 }
 
