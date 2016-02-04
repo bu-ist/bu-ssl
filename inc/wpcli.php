@@ -31,21 +31,25 @@ class SSL_CLI extends WP_CLI_Command {
                 'update_post_term_cache'    => false,
                 'fields'                    => 'ids',
             ) );
+        
+        WP_CLI::log( sprintf( "Scanning site #%d: Checking %d posts", get_current_blog_id(), count( $postids ) ) );
+
+        $this->ssl->remove_all_postmeta();
 
         if ( $postids ) {
             foreach ( $postids as $id ){ 
                 $post = get_post( $id );
 
-                if( $urls = $this->ssl->has_insecure_images( $id ) ){
-                    $debug = '';
+                $urls = $this->ssl->search_for_insecure_images_by_post( $id );
+                $debug = '';
 
-                    if( isset( $assoc_args['ssldebug'] ) ){
-                        $content = str_replace( get_site_url( null, null, 'http' ), get_site_url( null, null, 'relative' ), $post->post_content );
-                        $debug = "\n" . var_export( $urls, true ) . "\n";
-                    }
-                    
-                    $this->ssl->do_update_postmeta( $id, $urls );
-
+                if( isset( $assoc_args['ssldebug'] ) ){
+                    $debug = "\n" . var_export( $urls, true ) . "\n";
+                }
+                
+                $this->ssl->do_update_postmeta( $id, $urls );
+                
+                if( count( $urls ) ){
                     WP_CLI::warning( sprintf( 
                         "#%d '%s' - %d insecure image(s)", 
                         $id, 

@@ -58,7 +58,7 @@ class SSL {
     public static $set_meta_tags    = TRUE;
 
     // regex adopted from @imme_emosol https://mathiasbynens.be/demo/url-regex
-    public static $http_img_regex   = '@<img.*src.*(http:\/\/[^\s/$.?#].[^\s\'"]*).+>@iS';
+    public static $http_img_regex   = '@<img.*src\s{0,4}=.{0,4}(http:\/\/[^\s\/$.?#].[^\s\'"]*).+>@iS';
 
 
     function __construct() {
@@ -76,13 +76,15 @@ class SSL {
     }
 
     public static function add_meta(){
-        if( self::$set_meta_tags ){
+        if( self::$set_meta_tags && is_ssl() ){
                 echo '<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />'."\n";
         }
     }
 
     public static function add_headers( $headers ){
-        $headers['Content-Security-Policy'] = 'upgrade-insecure-requests';
+        if( is_ssl() ){
+            $headers['Content-Security-Policy'] = 'upgrade-insecure-requests';
+        }
         return $headers;
     }
 
@@ -102,14 +104,18 @@ class SSL {
             echo ( count( self::has_insecure_images( $post_ID ) ) ) ? "&#10071;" : "&#9989;";
         }
     }
+
+    public static function remove_all_postmeta(){
+        return delete_post_meta_by_key( self::$post_meta_key );
+    }
     
     public function search_for_insecure_images_by_post( $post_ID ){
         $post = get_post( $post_ID );
-        $content = str_replace( get_site_url( null, null, 'http' ), get_site_url( null, null, 'relative' ), $post->post_content );
-        return self::search_for_insecure_images( $content );
+        return self::search_for_insecure_images( $post->post_content );
     }
 
     public function search_for_insecure_images( $content ){
+        $content = str_replace( get_site_url( null, null, 'http' ), get_site_url( null, null, 'relative' ), $content );
         preg_match_all( self::$http_img_regex, $content, $urls, PREG_SET_ORDER );
         foreach ( $urls as $k => $u ) {
             if( 0 === strpos( $u[1], get_site_url( null, null, 'http' ) ) ){
@@ -124,9 +130,8 @@ class SSL {
 
         if( '' === $urls ){
             $urls = self::search_for_insecure_images_by_post( $post_ID );
+            self::do_update_postmeta( $post_ID, $urls );
         }
-
-        self::do_update_postmeta( $post_ID, $urls );
 
         return $urls;
     }
@@ -137,6 +142,8 @@ class SSL {
             $camo->setDomain( self::$camo_domain );
             $camo->setCamoKey( self::$camo_key );
             
+            $content = str_replace( get_site_url( null, null, 'http' ), get_site_url( null, null, 'relative' ), $content );
+
             $urls = self::search_for_insecure_images( $content );
 
             foreach ( $urls as $k => $u ) {
@@ -151,27 +158,16 @@ class SSL {
             return;
         }
 
-        $post = get_post( $post_ID );   
-
-        $content = str_replace( 
-            get_site_url( null, null, 'http' ), 
-            get_site_url( null, null, 'relative' ), 
-            $post->post_content 
-        );     
-
-        if( $urls = self::has_insecure_images( $post_ID ) ){
-            self::do_update_postmeta( $post_ID, $urls );
-        }
-
+        $post = get_post( $post_ID );    
+        $urls = self::search_for_insecure_images( $post->post_content );
+        
+        self::do_update_postmeta( $post_ID, $urls );
+ 
         return $urls;
     }
 
     public function do_update_postmeta( $post_ID, $urls ){
-        if( count( $urls ) ){
-            update_post_meta( $post_ID, self::$post_meta_key, $urls );
-        } else {
-            delete_post_meta( $post_ID, self::$post_meta_key );   
-        }
+        update_post_meta( $post_ID, self::$post_meta_key, $urls );
     }
 
     public function maybe_editor_warning(){
