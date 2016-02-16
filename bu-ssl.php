@@ -50,12 +50,11 @@ require_once __DIR__ . '/vendor/willwashburn/phpamo/src/Client.php';
 
 class SSL {
 
-    private static $camo_key        = BU_SSL_CAMO_KEY; 
-    private static $camo_domain     = BU_SSL_CAMO_DOMAIN;
+    private static $camo_key            = BU_SSL_CAMO_KEY; 
+    private static $camo_domain         = BU_SSL_CAMO_DOMAIN;
 
-    public static $post_meta_key    = '_bu_ssl_found_http_urls';
-    public static $always_redirect  = FALSE;
-    public static $set_meta_tags    = TRUE;
+    public static $post_meta_key        = '_bu_ssl_found_http_urls';
+    public static $always_redirect      = FALSE;
 
     // regex adopted from @imme_emosol https://mathiasbynens.be/demo/url-regex
     public static $http_img_regex   = '@<img.*src\s{0,4}=.{0,4}(http:\/\/[^\s\/$.?#].[^\s\'"]*).+>@iS';
@@ -100,8 +99,8 @@ class SSL {
     }
 
     public static function display_posts_column_ssl_status( $column, $post_ID ) {
-        if ($column == 'bu-ssl'){
-            echo ( count( self::has_insecure_images( $post_ID ) ) ) ? "&#10071;" : "&#9989;";
+        if ( 'bu-ssl' == $column ){
+            echo count( self::has_insecure_images( $post_ID ) ) ? "&#10071;" : "&#9989;";
         }
     }
 
