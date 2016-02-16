@@ -55,13 +55,16 @@ class SSL {
 
     public static $post_meta_key        = '_bu_ssl_found_http_urls';
     public static $always_redirect      = FALSE;
+    public static $set_csp              = FALSE;
+    public static $override_url_scheme  = TRUE;
+    public static $csp_report_url       = 'YOUR_REPORT_URL_HERE';
 
     // regex adopted from @imme_emosol https://mathiasbynens.be/demo/url-regex
     public static $http_img_regex   = '@<img.*src\s{0,4}=.{0,4}(http:\/\/[^\s\/$.?#].[^\s\'"]*).+>@iS';
 
 
     function __construct() {
-        add_action( 'wp_head',                      array( $this, 'add_meta' ) );
+        add_action( 'wp_head',                      array( $this, 'add_meta_tags' ) );
         add_action( 'template_redirect',            array( $this, 'do_redirect' ) );
         add_action( 'edit_form_top',                array( $this, 'maybe_editor_warning' ) );
         add_action( 'save_post',                    array( $this, 'update_post' ) );
@@ -72,17 +75,21 @@ class SSL {
         add_filter( 'the_content',                  array( $this, 'proxy_insecure_images' ), 999 );
         add_filter( 'manage_posts_columns',         array( $this, 'add_posts_column_ssl_status' ) );
         add_filter( 'manage_pages_columns',         array( $this, 'add_posts_column_ssl_status' ) );
+        add_filter( 'set_url_scheme',               array( $this, 'filter_url_scheme' ), 10, 3 );
     }
+    public static function filter_url_scheme( $url, $scheme, $orig_scheme ){
+        if( self::$override_url_scheme ){
 
-    public static function add_meta(){
-        if( self::$set_meta_tags && is_ssl() ){
+            // Don't send authenticated users to an insecure connection
+            if( is_user_logged_in() && force_ssl_admin() && 'http' == $scheme ){
+                $url = set_url_scheme( $url, 'https' );
+            }
                 echo '<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />'."\n";
         }
     }
 
     public static function add_headers( $headers ){
         if( is_ssl() ){
-            $headers['Content-Security-Policy'] = 'upgrade-insecure-requests';
         }
         return $headers;
     }
