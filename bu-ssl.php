@@ -84,12 +84,26 @@ class SSL {
             if( is_user_logged_in() && force_ssl_admin() && 'http' == $scheme ){
                 $url = set_url_scheme( $url, 'https' );
             }
+        }
+        return $url;
+    }
+    public static function add_meta_tags(){
+        if( is_ssl() ){
+            if( self::$set_csp ){
                 echo '<meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests" />'."\n";
+            } else {
+                printf( '<meta http-equiv="Content-Security-Policy-Report-Only" content="default-src https: \'unsafe-inline\' \'unsafe-eval\'; report-uri %s" />'."\n", self::$csp_report_url );
+            }
         }
     }
 
     public static function add_headers( $headers ){
         if( is_ssl() ){
+            if( self::$set_csp ){
+                $headers['Content-Security-Policy'] = 'upgrade-insecure-requests';
+            } else {
+                $headers['Content-Security-Policy-Report-Only'] = sprintf( "default-src https: 'unsafe-inline' 'unsafe-eval'; report-uri %s", self::$csp_report_url );
+            }
         }
         return $headers;
     }
