@@ -15,7 +15,11 @@ class BU_SSL_Tests extends \WP_UnitTestCase {
 		$_SERVER['HTTPS'] = 'on';
 		$headers = apply_filters( 'wp_headers', array() );
 
-		$this->assertEquals( $headers['Content-Security-Policy'], 'upgrade-insecure-requests' );
+		if( \BU\WordPress\Plugins\SSL::$set_csp ){
+			$this->assertEquals( $headers['Content-Security-Policy'], 'upgrade-insecure-requests' );
+		} else {
+			$this->assertNotNull( $headers['Content-Security-Policy-Report-Only'] );
+		}
 	}
 
 	function test_insecure_image_seearch(){
