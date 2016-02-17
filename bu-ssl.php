@@ -57,7 +57,7 @@ class SSL {
     public static $always_redirect      = FALSE;
     public static $set_csp              = FALSE;
     public static $override_url_scheme  = TRUE;
-    public static $csp_report_url       = 'YOUR_REPORT_URL_HERE';
+    public static $csp_report_url       = '/csp-report';
 
     // regex adopted from @imme_emosol https://mathiasbynens.be/demo/url-regex
     public static $http_img_regex   = '@<img.*src\s{0,4}=.{0,4}(http:\/\/[^\s\/$.?#].[^\s\'"]*).+>@iS';
