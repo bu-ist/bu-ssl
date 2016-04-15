@@ -117,7 +117,7 @@ class SSL {
     }
 
     public function add_meta_tags(){
-        if( is_ssl() && $this->options['enable_csp'] ){            
+        if( $this->options['enable_csp'] ){            
             printf( 
                 '<meta http-equiv="%s" content="%s" />'."\n", 
                 $this->csp_type,
@@ -126,7 +126,7 @@ class SSL {
         }
     }
     public function add_headers( $headers ){
-        if( is_ssl() && $this->options['enable_csp'] ){
+        if( $this->options['enable_csp'] ){
             $headers[ $this->csp_type ] = sprintf( "%s", $this->csp );
         }
         return $headers;

@@ -120,7 +120,7 @@ class SSL_Settings_Page extends SSL {
     public function settings_field_csp_report_url(){
         printf( 
             "<input type='text' name='bu_ssl_settings[csp_report_url]' value='%s' />", 
-            esc_textarea( $this->options['csp_report_url'] )    
+            esc_attr( $this->options['csp_report_url'] )    
         );
     }
 
