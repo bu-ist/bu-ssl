@@ -29,7 +29,7 @@ class SSL_Settings_Page extends SSL {
             'buSSLOptionsPage',
             'bu_ssl_settings_section'
         );  
-
+    /*
         add_settings_field(
             'enable_csp',
             'Enable Content Security Policy',
@@ -61,7 +61,7 @@ class SSL_Settings_Page extends SSL {
             'buSSLOptionsPage',
             'bu_ssl_settings_section'
         );  
-
+    */
         add_settings_field(
             'override_url_scheme',
             'Avoid sending logged-in users to insecure pages',
