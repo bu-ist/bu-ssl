@@ -56,7 +56,7 @@ class SSL {
     public $options = array(
         'post_meta_key'             => '_bu_ssl_found_http_urls',
         'always_redirect'           => FALSE,
-        'enable_csp'                => TRUE,
+        'enable_csp'                => FALSE,
         'enforce_csp'               => FALSE,
         'override_url_scheme'       => TRUE,
         'content_security_policy'   => "default-src https: 'unsafe-inline' 'unsafe-eval'",
@@ -66,14 +66,14 @@ class SSL {
     );
 
     function __construct() {
-        add_action( 'wp_head',                      array( $this, 'add_meta_tags' ) );
+        // add_action( 'wp_head',                      array( $this, 'add_meta_tags' ) );
         add_action( 'template_redirect',            array( $this, 'do_redirect' ) );
         add_action( 'edit_form_top',                array( $this, 'maybe_editor_warning' ) );
         add_action( 'save_post',                    array( $this, 'update_post' ) );
         add_action( 'manage_posts_custom_column',   array( $this, 'display_posts_column_ssl_status' ), 10, 2 );
         add_action( 'manage_pages_custom_column',   array( $this, 'display_posts_column_ssl_status' ), 10, 2 );
 
-        add_filter( 'wp_headers',                   array( $this, 'add_headers' ) );
+        // add_filter( 'wp_headers',                   array( $this, 'add_headers' ) );
         add_filter( 'the_content',                  array( $this, 'proxy_insecure_images' ), 999 );
         add_filter( 'manage_posts_columns',         array( $this, 'add_posts_column_ssl_status' ) );
         add_filter( 'manage_pages_columns',         array( $this, 'add_posts_column_ssl_status' ) );
