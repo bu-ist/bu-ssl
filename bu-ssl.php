@@ -34,12 +34,8 @@ define( 'BU_SSL_VERSION', '0.1' );
  * @see: https://github.com/atmos/camo
  * @see: https://github.com/willwashburn/Phpamo
 */
-if( ! defined( 'BU_SSL_CAMO_KEY' ) ){
-    define( 'BU_SSL_CAMO_KEY', 'YOUR_CAMO_KEY_HERE' );
-}
-
-if( ! defined( 'BU_SSL_CAMO_DOMAIN' ) ){
-    define( 'BU_SSL_CAMO_DOMAIN', 'sample-camo-domain.herokuapp.com' );
+if( ! defined( 'BU_SSL_CAMO_KEY' ) || ! defined( 'BU_SSL_CAMO_DOMAIN' ) ){
+    define( 'BU_SSL_CAMO_DISABLED', TRUE );
 }
 
 if ( defined('WP_CLI') && WP_CLI ) {
@@ -88,6 +84,10 @@ class SSL {
         if( $this->options['enable_csp'] ){
             self::build_csp();
         }
+    }
+
+    public function is_camo_disabled(){
+        return defined( 'BU_SSL_CAMO_DISABLED' ) && BU_SSL_CAMO_DISABLED;
     }
 
     public function build_csp(){
@@ -181,7 +181,7 @@ class SSL {
     }
 
     public function proxy_insecure_images( $content, $force_ssl=false ){
-        if( is_ssl() || $force_ssl ){
+        if( !self::is_camo_disabled() && ( is_ssl() || $force_ssl ) ){
             $camo = new \WillWashburn\Camo\Client();
             $camo->setDomain( BU_SSL_CAMO_DOMAIN );
             $camo->setCamoKey( BU_SSL_CAMO_KEY );
