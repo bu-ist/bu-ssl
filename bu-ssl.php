@@ -70,7 +70,7 @@ class SSL {
         add_action( 'manage_pages_custom_column',   array( $this, 'display_posts_column_ssl_status' ), 10, 2 );
 
         // add_filter( 'wp_headers',                   array( $this, 'add_headers' ) );
-        add_filter( 'the_content',                  array( $this, 'proxy_insecure_images' ), 999 );
+        // add_filter( 'the_content',                  array( $this, 'proxy_insecure_images' ), 999 );
         add_filter( 'manage_posts_columns',         array( $this, 'add_posts_column_ssl_status' ) );
         add_filter( 'manage_pages_columns',         array( $this, 'add_posts_column_ssl_status' ) );
         add_filter( 'set_url_scheme',               array( $this, 'filter_url_scheme' ), 10, 3 );
@@ -181,6 +181,7 @@ class SSL {
     }
 
     public function proxy_insecure_images( $content, $force_ssl=false ){
+        global $post;
         if( !self::is_camo_disabled() && ( is_ssl() || $force_ssl ) ){
             $camo = new \WillWashburn\Camo\Client();
             $camo->setDomain( BU_SSL_CAMO_DOMAIN );
@@ -188,7 +189,7 @@ class SSL {
             
             $content = str_replace( get_site_url( null, null, 'http' ), get_site_url( null, null, 'relative' ), $content );
 
-            $urls = self::search_for_insecure_images( $content );
+            $urls = self::has_insecure_images( $post->ID );
 
             foreach ( $urls as $k => $u ) {
                 $content = str_replace( $u[1], $camo->proxy( $u[1] ), $content );
@@ -218,9 +219,12 @@ class SSL {
         global $post;
 
         if( count( self::has_insecure_images( $post->ID ) ) ){
+            $message = '&#x1F513; This post contains images loaded over an insecure connection.';
+            // $message .= ' These images will be filtered through a <a href="#">secure image proxy</a>.';
+
             printf( 
                 '<div class="notice notice-error"><p>%s</p></div>',
-                 __('&#x1F513; This post contains images loaded over an insecure connection. These images will be filtered through a <a href="#">secure image proxy</a>.') 
+                 __( $message ) 
             );
         }
     }
