@@ -34,13 +34,38 @@ class BU_SSL_Tests extends \WP_UnitTestCase {
 		) );
 
 		// Positive match
-		$urls_found_post_1 = $ssl->search_for_insecure_images( $post_1->post_content );
+		$urls_found_post_1 = $ssl->search_for_insecure_content( $post_1->post_content, 'img' );
 		$this->assertContains( $insecure_image, $post_1->post_content );
 		$this->assertGreaterThan( 0, count( $urls_found_post_1 ) );
 
 		// Negative match
-		$urls_found_post_2 = $ssl->search_for_insecure_images( $post_2->post_content );
+		$urls_found_post_2 = $ssl->search_for_insecure_content( $post_2->post_content, 'img' );
 		$this->assertContains( $secure_image, $post_2->post_content );
+		$this->assertEquals( 0, count( $urls_found_post_2 ) );
+	} 
+
+	function test_insecure_embed_seearch(){
+		$ssl = new SSL();
+
+		$insecure_stylesheet = 'http://media.giphy.com/media/oXWwl0eUy2mNW/giphy.css';
+		$secure_stylesheet = 'https://media.giphy.com/media/oXWwl0eUy2mNW/giphy.css';
+
+		$post_1 = $this->factory->post->create_and_get( array(
+			'post_content' => '<video src="' . $insecure_stylesheet . '"></video',
+		) );
+
+		$post_2 = $this->factory->post->create_and_get( array(
+			'post_content' => '<video src="' . $secure_stylesheet . '"></video>',
+		) );
+
+		// Positive match
+		$urls_found_post_1 = $ssl->search_for_insecure_content( $post_1->post_content );
+		$this->assertContains( $insecure_stylesheet, $post_1->post_content );
+		$this->assertGreaterThan( 0, count( $urls_found_post_1 ) );
+
+		// Negative match
+		$urls_found_post_2 = $ssl->search_for_insecure_content( $post_2->post_content );
+		$this->assertContains( $secure_stylesheet, $post_2->post_content );
 		$this->assertEquals( 0, count( $urls_found_post_2 ) );
 	} 
 }

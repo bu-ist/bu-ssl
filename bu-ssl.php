@@ -34,12 +34,8 @@ define( 'BU_SSL_VERSION', '0.1' );
  * @see: https://github.com/atmos/camo
  * @see: https://github.com/willwashburn/Phpamo
 */
-if( ! defined( 'BU_SSL_CAMO_KEY' ) ){
-    define( 'BU_SSL_CAMO_KEY', 'YOUR_CAMO_KEY_HERE' );
-}
-
-if( ! defined( 'BU_SSL_CAMO_DOMAIN' ) ){
-    define( 'BU_SSL_CAMO_DOMAIN', 'sample-camo-domain.herokuapp.com' );
+if( ! defined( 'BU_SSL_CAMO_KEY' ) || ! defined( 'BU_SSL_CAMO_DOMAIN' ) ){
+    define( 'BU_SSL_CAMO_DISABLED', TRUE );
 }
 
 if ( defined('WP_CLI') && WP_CLI ) {
@@ -63,6 +59,8 @@ class SSL {
         'csp_report_url'            => '',
         // regex adopted from @imme_emosol https://mathiasbynens.be/demo/url-regex
         'http_img_regex'            => '@<img.*src\s{0,4}=.{0,4}(http:\/\/[^\s\/$.?#].[^\s\'"]*).+>@iS',
+        // see full list -- https://developer.mozilla.org/en-US/docs/Web/Security/Mixed_content#Types_of_mixed_content
+        'http_all_regex'            => '@<(img|audio|video|object|iframe|script|link|iframe).*(?:src|data|href)\s{0,4}=.{0,4}(http:\/\/[^\s\/$.?#].[^\s\'"]*).+>@iS',
     );
 
     function __construct() {
@@ -74,7 +72,7 @@ class SSL {
         add_action( 'manage_pages_custom_column',   array( $this, 'display_posts_column_ssl_status' ), 10, 2 );
 
         // add_filter( 'wp_headers',                   array( $this, 'add_headers' ) );
-        add_filter( 'the_content',                  array( $this, 'proxy_insecure_images' ), 999 );
+        // add_filter( 'the_content',                  array( $this, 'proxy_insecure_images' ), 999 );
         add_filter( 'manage_posts_columns',         array( $this, 'add_posts_column_ssl_status' ) );
         add_filter( 'manage_pages_columns',         array( $this, 'add_posts_column_ssl_status' ) );
         add_filter( 'set_url_scheme',               array( $this, 'filter_url_scheme' ), 10, 3 );
@@ -88,6 +86,10 @@ class SSL {
         if( $this->options['enable_csp'] ){
             self::build_csp();
         }
+    }
+
+    public function is_camo_disabled(){
+        return defined( 'BU_SSL_CAMO_DISABLED' ) && BU_SSL_CAMO_DISABLED;
     }
 
     public function build_csp(){
@@ -140,58 +142,68 @@ class SSL {
     
     public function add_posts_column_ssl_status( $columns ) {
         return array_merge( $columns, 
-            array( 'bu-ssl' => __( 'SSL-ready', 'bu-ssl' ) ) );
+            array( 'bu-ssl' => __( 'SSL Check', 'bu-ssl' ) ) );
     }
 
     public function display_posts_column_ssl_status( $column, $post_ID ) {
+        global $post;
+
         if ( 'bu-ssl' == $column ){
-            echo count( self::has_insecure_images( $post_ID ) ) ? "&#10071;" : "&#9989;";
+            echo count( self::has_insecure_content( $post->post_content ) ) ? "&#10071;" : "&#9989;";
         }
     }
 
     public function remove_all_postmeta(){
         return delete_post_meta_by_key( $this->options['post_meta_key'] );
     }
-    
-    public function search_for_insecure_images_by_post( $post_ID ){
-        $post = get_post( $post_ID );
-        return self::search_for_insecure_images( $post->post_content );
-    }
 
-    public function search_for_insecure_images( $content ){
+    public function search_for_insecure_content( $content, $type='any' ){
         $content = str_replace( get_site_url( null, null, 'http' ), get_site_url( null, null, 'relative' ), $content );
-        preg_match_all( $this->options['http_img_regex'], $content, $urls, PREG_SET_ORDER );
+        preg_match_all( $this->options['http_all_regex'], $content, $urls, PREG_SET_ORDER );
         foreach ( $urls as $k => $u ) {
-            if( 0 === strpos( $u[1], get_site_url( null, null, 'http' ) ) ){
+            if( 'any' !== $type && $u[1] !== $type ){
+                array_splice( $urls, $k, 1 );
+            }
+
+            if( 0 === strpos( $u[2], get_site_url( null, null, 'http' ) ) ){
                 array_splice( $urls, $k, 1 );
             }
         }
+
         return $urls;
     }
 
-    public function has_insecure_images( $post_ID ){
-        $urls = get_post_meta( $post_ID, $this->options['post_meta_key'], true );
+    public function has_insecure_content( $content='', $search_type='any' ){
+        $meta_key = $this->options['post_meta_key'];
+        
+        if( 'any' !== $search_type ){
+            $meta_key .= "_$search_type";
+        }
 
-        if( '' === $urls ){
-            $urls = self::search_for_insecure_images_by_post( $post_ID );
-            self::do_update_postmeta( $post_ID, $urls );
+        $urls = get_post_meta( $post_ID, $meta_key, true );
+
+        if( false === $urls ){       
+            $urls = self::search_for_insecure_content( $content, $search_type );
+            self::do_update_postmeta( $meta_key, $post_ID, $urls );
         }
 
         return $urls;
     }
 
     public function proxy_insecure_images( $content, $force_ssl=false ){
-        if( is_ssl() || $force_ssl ){
+        global $post;
+        if( !self::is_camo_disabled() && ( is_ssl() || $force_ssl ) ){
             $camo = new \WillWashburn\Camo\Client();
             $camo->setDomain( BU_SSL_CAMO_DOMAIN );
             $camo->setCamoKey( BU_SSL_CAMO_KEY );
             
-            $content = str_replace( get_site_url( null, null, 'http' ), get_site_url( null, null, 'relative' ), $content );
+            $urls = self::has_insecure_content( $content, 'img' );
 
-            $urls = self::search_for_insecure_images( $content );
-
-            foreach ( $urls as $k => $u ) {
-                $content = str_replace( $u[1], $camo->proxy( $u[1] ), $content );
+            if( !empty($urls) ){
+                foreach ( $urls as $k => $u ) {
+                    $url = $u[2];
+                    $content = str_replace( $url, $camo->proxy( $url ), $content );
+                }
             }
         }
         return $content;
@@ -203,24 +215,26 @@ class SSL {
         }
 
         $post = get_post( $post_ID );    
-        $urls = self::search_for_insecure_images( $post->post_content );
+        $urls = self::search_for_insecure_content( $post->post_content );
         
-        self::do_update_postmeta( $post_ID, $urls );
+        self::do_update_postmeta( $this->options['post_meta_key'], $post_ID, $urls );
  
         return $urls;
     }
 
-    public function do_update_postmeta( $post_ID, $urls ){
-        update_post_meta( $post_ID, $this->options['post_meta_key'], $urls );
+    public function do_update_postmeta( $meta_key, $post_ID, $urls ){
+        update_post_meta( $meta_key, $post_ID, $this->options['post_meta_key'], $urls );
     }
 
     public function maybe_editor_warning(){
         global $post;
+        if( count( self::has_insecure_content( $post->post_content ) ) ){
+            $message = '&#x1F513; This post contains content loaded over an insecure connection.';
+            // $message .= ' These images will be filtered through a <a href="#">secure image proxy</a>.';
 
-        if( count( self::has_insecure_images( $post->ID ) ) ){
             printf( 
                 '<div class="notice notice-error"><p>%s</p></div>',
-                 __('&#x1F513; This post contains images loaded over an insecure connection. These images will be filtered through a <a href="#">secure image proxy</a>.') 
+                 __( $message ) 
             );
         }
     }
