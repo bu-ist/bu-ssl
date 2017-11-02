@@ -56,9 +56,9 @@ class SSL {
 		'override_url_scheme'       => true,
 		'content_security_policy'   => "default-src https: 'unsafe-inline' 'unsafe-eval'",
 		'csp_report_url'            => '',
-		// regex adopted from @imme_emosol https://mathiasbynens.be/demo/url-regex
+		// regex adopted from @imme_emosol https://mathiasbynens.be/demo/url-regex .
 		'http_img_regex'            => '@<img.*src\s{0,4}=.{0,4}(http:\/\/[^\s\/$.?#].[^\s\'"]*).+>@iS',
-		// see full list -- https://developer.mozilla.org/en-US/docs/Web/Security/Mixed_content#Types_of_mixed_content
+		// see full list -- https://developer.mozilla.org/en-US/docs/Web/Security/Mixed_content#Types_of_mixed_content .
 		'http_all_regex'            => '@<(img|audio|video|object|iframe|script|link|iframe).*(?:src|data|href)\s{0,4}=.{0,4}(http:\/\/[^\s\/$.?#].[^\s\'"]*).+>@iS',
 	);
 
@@ -109,8 +109,8 @@ class SSL {
 	public function filter_url_scheme( $url, $scheme, $orig_scheme ) {
 		if ( $this->options['override_url_scheme'] ) {
 
-			// Don't send authenticated users to an insecure connection
 			if ( is_user_logged_in() && force_ssl_admin() && 'http' == $scheme ) {
+			// Don't send authenticated users to an insecure connection.
 				$url = set_url_scheme( $url, 'https' );
 			}
 		}

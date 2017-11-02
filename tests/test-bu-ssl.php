@@ -14,7 +14,7 @@ class BU_SSL_Tests extends \WP_UnitTestCase {
 		$_SERVER['HTTPS'] = 'on';
 		$headers = apply_filters( 'wp_headers', array() );
 
-		// Default to Report-Only
+		// Default to Report-Only.
 		$this->assertArrayHasKey( 'Content-Security-Policy-Report-Only', $headers );
 		$this->assertEquals( $headers['Content-Security-Policy-Report-Only'], $ssl->options['content_security_policy'] );
 	}
@@ -33,12 +33,12 @@ class BU_SSL_Tests extends \WP_UnitTestCase {
 			'post_content' => '<img src="' . $secure_image . '" />',
 		) );
 
-		// Positive match
+		// Positive match.
 		$urls_found_post_1 = $ssl->search_for_insecure_content( $post_1->post_content, 'img' );
 		$this->assertContains( $insecure_image, $post_1->post_content );
 		$this->assertGreaterThan( 0, count( $urls_found_post_1 ) );
 
-		// Negative match
+		// Negative match.
 		$urls_found_post_2 = $ssl->search_for_insecure_content( $post_2->post_content, 'img' );
 		$this->assertContains( $secure_image, $post_2->post_content );
 		$this->assertEquals( 0, count( $urls_found_post_2 ) );
@@ -58,12 +58,12 @@ class BU_SSL_Tests extends \WP_UnitTestCase {
 			'post_content' => '<video src="' . $secure_stylesheet . '"></video>',
 		) );
 
-		// Positive match
+		// Positive match.
 		$urls_found_post_1 = $ssl->search_for_insecure_content( $post_1->post_content );
 		$this->assertContains( $insecure_stylesheet, $post_1->post_content );
 		$this->assertGreaterThan( 0, count( $urls_found_post_1 ) );
 
-		// Negative match
+		// Negative match.
 		$urls_found_post_2 = $ssl->search_for_insecure_content( $post_2->post_content );
 		$this->assertContains( $secure_stylesheet, $post_2->post_content );
 		$this->assertEquals( 0, count( $urls_found_post_2 ) );
