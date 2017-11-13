@@ -1,33 +1,33 @@
 <?php
-/*
-Plugin Name: BU SSL
-Plugin URI: http://www.bu.edu/tech/
-Description: Hi, I help transition WordPress sites to SSL.
-Version: 0.1
-Author: Boston University IS&T
-Contributors: Andrew Bauer
-
-GNU General Public License, Free Software Foundation <http://creativecommons.org/licenses/GPL/2.0/>
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-*/
+/**
+ * BU SSL
+ *
+ * Hi, I help transition WordPress sites to SSL.
+ *
+ * @package BU_SSL
+ * @author Boston University IS&T
+ * @license http://creativecommons.org/licenses/GPL/2.0/ GNU General Public License, Free Software Foundation
+ *
+ * @wordpress-plugin
+ * Plugin Name: BU SSL
+ * Plugin URI: http://www.bu.edu/tech/
+ * Description: Hi, I help transition WordPress sites to SSL.
+ * Version: 0.1
+ * Author: Boston University IS&T
+ * Author URI: http://www.bu.edu/tech/
+ * Contributors: Andrew Bauer
+ * License: GPL 2.0
+ */
 
 namespace BU\WordPress\Plugins;
 
+// Specify plugin version with a constant.
 define( 'BU_SSL_VERSION', '0.1' );
-// define( 'BU_SSL_DEBUG', true );
+
+// Set BU_SSL_DEBUG to true if you want to enable debugging.
+// Note: This flag seems to not be used anywhere at the moment.
+define( 'BU_SSL_DEBUG', false );
+
 /*
  * Camo Image Proxy
  * @see: https://github.com/atmos/camo
@@ -37,17 +37,39 @@ if ( ! defined( 'BU_SSL_CAMO_KEY' ) || ! defined( 'BU_SSL_CAMO_DOMAIN' ) ) {
 	define( 'BU_SSL_CAMO_DISABLED', true );
 }
 
+// Add wp-cli commands.
 if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	include __DIR__ . '/inc/wpcli.php';
 }
-
+// Use the phpamo library.
 require_once __DIR__ . '/vendor/willwashburn/phpamo/src/Client.php';
+
+// Add customizable settings in wp-admin.
 require_once __DIR__ . '/inc/settings.php';
 
+/**
+ * Main plugin class
+ */
 class SSL {
+	/**
+	 * The Content Security Policy to be used
+	 *
+	 * @var string
+	 */
 	private $csp;
+
+	/**
+	 * The CSP type
+	 *
+	 * @var string
+	 */
 	private $csp_type = 'Content-Security-Policy';
 
+	/**
+	 * The plugin's default options
+	 *
+	 * @var array
+	 */
 	public $options = array(
 		'post_meta_key'             => '_bu_ssl_found_http_urls',
 		'always_redirect'           => false,
@@ -62,7 +84,11 @@ class SSL {
 		'http_all_regex'            => '@<(img|audio|video|object|iframe|script|link|iframe).*(?:src|data|href)\s{0,4}=.{0,4}(http:\/\/[^\s\/$.?#].[^\s\'"]*).+>@iS',
 	);
 
+	/**
+	 * Class constructor
+	 */
 	function __construct() {
+		// Register actions.
 		// add_action( 'wp_head',                      array( $this, 'add_meta_tags' ) );
 		add_action( 'template_redirect',            array( $this, 'do_redirect' ) );
 		add_action( 'edit_form_top',                array( $this, 'maybe_editor_warning' ) );
@@ -70,27 +96,41 @@ class SSL {
 		add_action( 'manage_posts_custom_column',   array( $this, 'display_posts_column_ssl_status' ), 10, 2 );
 		add_action( 'manage_pages_custom_column',   array( $this, 'display_posts_column_ssl_status' ), 10, 2 );
 
+		// Register filters.
 		// add_filter( 'wp_headers',                   array( $this, 'add_headers' ) );
 		// add_filter( 'the_content',                  array( $this, 'proxy_insecure_images' ), 999 );
 		add_filter( 'manage_posts_columns',         array( $this, 'add_posts_column_ssl_status' ) );
 		add_filter( 'manage_pages_columns',         array( $this, 'add_posts_column_ssl_status' ) );
 		add_filter( 'set_url_scheme',               array( $this, 'filter_url_scheme' ), 10, 3 );
 
+		// Get saved options from db.
 		$saved_options = get_option( 'bu_ssl_settings' );
 
+		// Merge saved options with the default options.
 		if ( ! empty( $saved_options ) ) {
 			$this->options = array_merge( $this->options, $saved_options );
 		}
 
+		// Build the Content-Security-Policy if the enable_csp option is turned on.
 		if ( $this->options['enable_csp'] ) {
 			self::build_csp();
 		}
 	}
 
+	/**
+	 * Checks if camo is disabled
+	 *
+	 * @return boolean The value of the BU_SSL_CAMO_DISABLED flag
+	 */
 	public function is_camo_disabled() {
 		return defined( 'BU_SSL_CAMO_DISABLED' ) && BU_SSL_CAMO_DISABLED;
 	}
 
+	/**
+	 * Builds the content security policy string based on the set options
+	 *
+	 * @return void
+	 */
 	public function build_csp() {
 		$csp = $this->options['content_security_policy'];
 
@@ -106,11 +146,19 @@ class SSL {
 		}
 	}
 
+	/**
+	 * Prevent authenticated users from being sent to an insecure connection
+	 *
+	 * @param string      $url         The complete URL including scheme and path.
+	 * @param string      $scheme      Scheme applied to the URL. One of 'http', 'https', or 'relative'.
+	 * @param string|null $orig_scheme Scheme requested for the URL. One of 'http', 'https', 'login', 'login_post', 'admin', 'relative', 'rest', 'rpc', or null.
+	 * @return string The filtered URL.
+	 */
 	public function filter_url_scheme( $url, $scheme, $orig_scheme ) {
 		if ( $this->options['override_url_scheme'] ) {
 
 			if ( is_user_logged_in() && force_ssl_admin() && 'http' == $scheme ) {
-			// Don't send authenticated users to an insecure connection.
+				// Don't send authenticated users to an insecure connection.
 				$url = set_url_scheme( $url, 'https' );
 			}
 		}
