@@ -224,11 +224,9 @@ class SSL {
 	 * @return void
 	 */
 	public function display_posts_column_ssl_status( $column, $post_id ) {
-		global $post;
-
 		if ( 'bu-ssl' === $column ) {
 			// Check if the post has insecure content and display appropriate icon.
-			echo count( self::has_insecure_content( $post->post_content ) ) ? '&#10071;' : '&#9989;';
+			echo count( self::has_insecure_content( $post_id ) ) ? '&#10071;' : '&#9989;';
 		}
 	}
 
@@ -324,7 +322,7 @@ class SSL {
 			$camo->setCamoKey( BU_SSL_CAMO_KEY );
 
 			// Get list of insecure img urls.
-			$urls = self::has_insecure_content( $content, 'img' );
+			$urls = self::has_insecure_content( $post->ID, 'img' );
 
 			if ( ! empty( $urls ) ) {
 				// Create a proxy url and replace the insecure url with it.
@@ -380,7 +378,7 @@ class SSL {
 	 */
 	public function maybe_editor_warning() {
 		global $post;
-		if ( count( self::has_insecure_content( $post->post_content ) ) ) {
+		if ( count( self::has_insecure_content( $post->ID ) ) ) {
 			$message = __( '&#x1F513; This post contains content loaded over an insecure connection.' );
 			// $message .= __( ' These images will be filtered through a <a href="#">secure image proxy</a>.' );
 			printf(
