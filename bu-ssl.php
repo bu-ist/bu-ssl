@@ -220,10 +220,10 @@ class SSL {
 	 * Populates the SSL check column in posts list.
 	 *
 	 * @param string $column The column name.
-	 * @param int    $post_ID The current post's ID.
+	 * @param int    $post_id The current post's ID.
 	 * @return void
 	 */
-	public function display_posts_column_ssl_status( $column, $post_ID ) {
+	public function display_posts_column_ssl_status( $column, $post_id ) {
 		global $post;
 
 		if ( 'bu-ssl' === $column ) {
@@ -279,11 +279,11 @@ class SSL {
 			$meta_key .= "_$search_type";
 		}
 
-		$urls = get_post_meta( $post_ID, $meta_key, true );
+		$urls = get_post_meta( $post_id, $meta_key, true );
 
 		if ( false === $urls ) {
 			$urls = self::search_for_insecure_content( $content, $search_type );
-			self::do_update_postmeta( $meta_key, $post_ID, $urls );
+			self::do_update_postmeta( $meta_key, $post_id, $urls );
 		}
 
 		return $urls;
@@ -322,23 +322,23 @@ class SSL {
 	/**
 	 * On post update, checks for insecure content.
 	 *
-	 * @param int $post_ID The post ID.
+	 * @param int $post_id The post ID.
 	 * @return array The list of insecure urls. (cedas: Not sure if this is neccesary, we might remove it)
 	 */
-	public function update_post( $post_ID ) {
+	public function update_post( $post_id ) {
 		// Skip if this is just a revision.
-		if ( wp_is_post_revision( $post_ID ) ) {
+		if ( wp_is_post_revision( $post_id ) ) {
 			return;
 		}
 
 		// Get the post object from the post id.
-		$post = get_post( $post_ID );
+		$post = get_post( $post_id );
 
 		// Get list of insecure urls.
 		$urls = self::search_for_insecure_content( $post->post_content );
 
 		// Update post meta with list of insecure urls.
-		self::do_update_postmeta( $this->options['post_meta_key'], $post_ID, $urls );
+		self::do_update_postmeta( $this->options['post_meta_key'], $post_id, $urls );
 
 		return $urls;
 	}
@@ -347,12 +347,12 @@ class SSL {
 	 * Updates the postmeta
 	 *
 	 * @param string $meta_key The meta key.
-	 * @param int    $post_ID The post id.
+	 * @param int    $post_id The post id.
 	 * @param array  $urls The array of insecure urls.
 	 * @return void
 	 */
-	public function do_update_postmeta( $meta_key, $post_ID, $urls ) {
-		update_post_meta( $meta_key, $post_ID, $this->options['post_meta_key'], $urls );
+	public function do_update_postmeta( $meta_key, $post_id, $urls ) {
+		update_post_meta( $meta_key, $post_id, $this->options['post_meta_key'], $urls );
 	}
 
 	/**
