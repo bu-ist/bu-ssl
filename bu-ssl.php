@@ -174,8 +174,8 @@ class SSL {
 		if ( $this->options['enable_csp'] ) {
 			printf(
 				'<meta http-equiv="%s" content="%s" />' . "\n",
-				$this->csp_type,
-				$this->csp
+				esc_html( $this->csp_type ),
+				esc_html( $this->csp )
 			);
 		}
 	}
@@ -363,11 +363,11 @@ class SSL {
 	public function maybe_editor_warning() {
 		global $post;
 		if ( count( self::has_insecure_content( $post->post_content ) ) ) {
-			$message = '&#x1F513; This post contains content loaded over an insecure connection.';
-			// $message .= ' These images will be filtered through a <a href="#">secure image proxy</a>.';
+			$message = __( '&#x1F513; This post contains content loaded over an insecure connection.' );
+			// $message .= __( ' These images will be filtered through a <a href="#">secure image proxy</a>.' );
 			printf(
 				'<div class="notice notice-error"><p>%s</p></div>',
-				__( $message )
+				esc_html( $message )
 			);
 		}
 	}
