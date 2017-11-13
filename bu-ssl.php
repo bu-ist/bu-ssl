@@ -286,11 +286,10 @@ class SSL {
 			$meta_key .= "_$search_type";
 		}
 
-		// Get post meta value.
-		$urls = get_post_meta( $post_id, $meta_key, true );
-
-		// If nothing was returned, search content for insecure urls and update post meta.
-		if ( false === $urls ) {
+		// Get post meta for insecure urls if it exists. Else, search for insecure content and update post meta.
+		if ( metadata_exists( 'post', $post_id, $meta_key ) ) {
+			$urls = get_post_meta( $post_id, $meta_key, true );
+		} else {
 			// Get the post object from the post id.
 			$post = get_post( $post_id );
 
