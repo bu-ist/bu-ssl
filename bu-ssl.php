@@ -147,7 +147,7 @@ class SSL {
 	}
 
 	/**
-	 * Prevent authenticated users from being sent to an insecure connection
+	 * Prevents authenticated users from being sent to an insecure connection
 	 *
 	 * @param string      $url         The complete URL including scheme and path.
 	 * @param string      $scheme      Scheme applied to the URL. One of 'http', 'https', or 'relative'.
@@ -165,6 +165,11 @@ class SSL {
 		return $url;
 	}
 
+	/**
+	 * Adds CSP meta tags
+	 *
+	 * @return void
+	 */
 	public function add_meta_tags() {
 		if ( $this->options['enable_csp'] ) {
 			printf(
@@ -174,6 +179,12 @@ class SSL {
 			);
 		}
 	}
+	/**
+	 * Adds CSP headers
+	 *
+	 * @param array $headers The list of headers to be sent.
+	 * @return array The filtered headers.
+	 */
 	public function add_headers( $headers ) {
 		if ( $this->options['enable_csp'] ) {
 			$headers[ $this->csp_type ] = sprintf( '%s', $this->csp );
@@ -181,12 +192,23 @@ class SSL {
 		return $headers;
 	}
 
+	/**
+	 * Redirects to safe connection
+	 *
+	 * @return void
+	 */
 	public function do_redirect() {
 		if ( $this->options['always_redirect'] && ! is_ssl() ) {
 			wp_redirect( site_url( $_SERVER['REQUEST_URI'], 'https' ) );
 		}
 	}
 
+	/**
+	 * Adds SSL check column to posts list
+	 *
+	 * @param array $columns An array of columns.
+	 * @return array The filtered array of columns.
+	 */
 	public function add_posts_column_ssl_status( $columns ) {
 		return array_merge( $columns,
 			array(
@@ -194,26 +216,54 @@ class SSL {
 		) );
 	}
 
+	/**
+	 * Populates the SSL check column in posts list.
+	 *
+	 * @param string $column The column name.
+	 * @param int    $post_ID The current post's ID.
+	 * @return void
+	 */
 	public function display_posts_column_ssl_status( $column, $post_ID ) {
 		global $post;
 
 		if ( 'bu-ssl' == $column ) {
+			// Check if the post has insecure content and display appropriate icon.
 			echo count( self::has_insecure_content( $post->post_content ) ) ? '&#10071;' : '&#9989;';
 		}
 	}
 
+	/**
+	 * Removes all postmeta added by this plugin.
+	 *
+	 * @return bool Whether the post meta key was deleted from the database.
+	 */
 	public function remove_all_postmeta() {
 		return delete_post_meta_by_key( $this->options['post_meta_key'] );
 	}
 
+	/**
+	 * Searches for insecure content in a post's content.
+	 *
+	 * @param string $content The post content.
+	 * @param string $type The type of content we are checking to see if it is insecure or not.
+	 * @return array The array of insecure URLs found.
+	 */
 	public function search_for_insecure_content( $content, $type = 'any' ) {
+		// Replace any internal http urls with relative urls.
 		$content = str_replace( get_site_url( null, null, 'http' ), get_site_url( null, null, 'relative' ), $content );
+
+		// Use regex to find all remaining insecure urls.
+		// This applies to external urls since we already took care of internal urls above.
 		preg_match_all( $this->options['http_all_regex'], $content, $urls, PREG_SET_ORDER );
+
+		// Filter list of insecure urls.
 		foreach ( $urls as $k => $u ) {
+			// If the url type does not match the specified type, remove it from the $urls array to ignore it.
 			if ( 'any' !== $type && $u[1] !== $type ) {
 				array_splice( $urls, $k, 1 );
 			}
 
+			// If the url is internal, ignore it.
 			if ( 0 === strpos( $u[2], get_site_url( null, null, 'http' ) ) ) {
 				array_splice( $urls, $k, 1 );
 			}
@@ -239,16 +289,27 @@ class SSL {
 		return $urls;
 	}
 
+	/**
+	 * Proxies insecure images
+	 *
+	 * @param string  $content The post content.
+	 * @param boolean $force_ssl Force use of proxied images regardless of is_ssl result.
+	 * @return string The filtered content.
+	 */
 	public function proxy_insecure_images( $content, $force_ssl = false ) {
 		global $post;
+		// If camo is enabled and the site is using SSL or the force SSL parameter is set to true.
 		if ( ! self::is_camo_disabled() && ( is_ssl() || $force_ssl ) ) {
+			// Configure the $camo object.
 			$camo = new \WillWashburn\Camo\Client();
 			$camo->setDomain( BU_SSL_CAMO_DOMAIN );
 			$camo->setCamoKey( BU_SSL_CAMO_KEY );
 
+			// Get list of insecure img urls.
 			$urls = self::has_insecure_content( $content, 'img' );
 
 			if ( ! empty( $urls ) ) {
+				// Create a proxy url and replace the insecure url with it.
 				foreach ( $urls as $k => $u ) {
 					$url = $u[2];
 					$content = str_replace( $url, $camo->proxy( $url ), $content );
@@ -258,23 +319,47 @@ class SSL {
 		return $content;
 	}
 
+	/**
+	 * On post update, checks for insecure content.
+	 *
+	 * @param int $post_ID The post ID.
+	 * @return array The list of insecure urls. (cedas: Not sure if this is neccesary, we might remove it)
+	 */
 	public function update_post( $post_ID ) {
+		// Skip if this is just a revision.
 		if ( wp_is_post_revision( $post_ID ) ) {
 			return;
 		}
 
+		// Get the post object from the post id.
 		$post = get_post( $post_ID );
+
+		// Get list of insecure urls.
 		$urls = self::search_for_insecure_content( $post->post_content );
 
+		// Update post meta with list of insecure urls.
 		self::do_update_postmeta( $this->options['post_meta_key'], $post_ID, $urls );
 
 		return $urls;
 	}
 
+	/**
+	 * Updates the postmeta
+	 *
+	 * @param string $meta_key The meta key.
+	 * @param int    $post_ID The post id.
+	 * @param array  $urls The array of insecure urls.
+	 * @return void
+	 */
 	public function do_update_postmeta( $meta_key, $post_ID, $urls ) {
 		update_post_meta( $meta_key, $post_ID, $this->options['post_meta_key'], $urls );
 	}
 
+	/**
+	 * Displays an editor warning if the post has insecure content.
+	 *
+	 * @return void
+	 */
 	public function maybe_editor_warning() {
 		global $post;
 		if ( count( self::has_insecure_content( $post->post_content ) ) ) {
