@@ -157,7 +157,7 @@ class SSL {
 	public function filter_url_scheme( $url, $scheme, $orig_scheme ) {
 		if ( $this->options['override_url_scheme'] ) {
 
-			if ( is_user_logged_in() && force_ssl_admin() && 'http' == $scheme ) {
+			if ( is_user_logged_in() && force_ssl_admin() && 'http' === $scheme ) {
 				// Don't send authenticated users to an insecure connection.
 				$url = set_url_scheme( $url, 'https' );
 			}
@@ -226,7 +226,7 @@ class SSL {
 	public function display_posts_column_ssl_status( $column, $post_ID ) {
 		global $post;
 
-		if ( 'bu-ssl' == $column ) {
+		if ( 'bu-ssl' === $column ) {
 			// Check if the post has insecure content and display appropriate icon.
 			echo count( self::has_insecure_content( $post->post_content ) ) ? '&#10071;' : '&#9989;';
 		}
