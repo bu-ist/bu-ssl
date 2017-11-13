@@ -272,20 +272,38 @@ class SSL {
 		return $urls;
 	}
 
-	public function has_insecure_content( $content = '', $search_type = 'any' ) {
+	/**
+	 * Checks if post has insecure content
+	 *
+	 * @param string $post_id The post ID.
+	 * @param string $search_type The type of html tags to search for. Default is 'any'.
+	 * @return array The array of insecure urls.
+	 */
+	public function has_insecure_content( $post_id, $search_type = 'any' ) {
+		// Get base post_meta_key from options.
 		$meta_key = $this->options['post_meta_key'];
 
+		// If searching for a specific type of tag, append it to the post_meta_key.
 		if ( 'any' !== $search_type ) {
 			$meta_key .= "_$search_type";
 		}
 
+		// Get post meta value.
 		$urls = get_post_meta( $post_id, $meta_key, true );
 
+		// If nothing was returned, search content for insecure urls and update post meta.
 		if ( false === $urls ) {
-			$urls = self::search_for_insecure_content( $content, $search_type );
+			// Get the post object from the post id.
+			$post = get_post( $post_id );
+
+			// Search for insecure content.
+			$urls = self::search_for_insecure_content( $post->post_content, $search_type );
+
+			// Update post meta.
 			self::do_update_postmeta( $meta_key, $post_id, $urls );
 		}
 
+		// Return the insecure urls array.
 		return $urls;
 	}
 
