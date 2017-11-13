@@ -199,7 +199,7 @@ class SSL {
 	 */
 	public function do_redirect() {
 		if ( $this->options['always_redirect'] && ! is_ssl() ) {
-			wp_redirect( site_url( $_SERVER['REQUEST_URI'], 'https' ) );
+			wp_safe_redirect( site_url( $_SERVER['REQUEST_URI'], 'https' ) );
 		}
 	}
 
