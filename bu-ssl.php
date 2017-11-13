@@ -298,7 +298,7 @@ class SSL {
 			$urls = self::search_for_insecure_content( $post->post_content, $search_type );
 
 			// Update post meta.
-			self::do_update_postmeta( $meta_key, $post_id, $urls );
+			update_post_meta( $post_id, $meta_key, $urls );
 		}
 
 		// Return the insecure urls array.
@@ -354,21 +354,9 @@ class SSL {
 		$urls = self::search_for_insecure_content( $post->post_content );
 
 		// Update post meta with list of insecure urls.
-		self::do_update_postmeta( $this->options['post_meta_key'], $post_id, $urls );
+		update_post_meta( $post_id, $this->options['post_meta_key'], $urls );
 
 		return $urls;
-	}
-
-	/**
-	 * Updates the postmeta
-	 *
-	 * @param string $meta_key The meta key.
-	 * @param int    $post_id The post id.
-	 * @param array  $urls The array of insecure urls.
-	 * @return void
-	 */
-	public function do_update_postmeta( $meta_key, $post_id, $urls ) {
-		update_post_meta( $meta_key, $post_id, $this->options['post_meta_key'], $urls );
 	}
 
 	/**
