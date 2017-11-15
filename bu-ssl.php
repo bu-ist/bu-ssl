@@ -98,7 +98,7 @@ class SSL {
 
 		// Register filters.
 		// add_filter( 'wp_headers',                   array( $this, 'add_headers' ) );
-		// add_filter( 'the_content',                  array( $this, 'proxy_insecure_images' ), 999 );
+		add_filter( 'the_content',                  array( $this, 'proxy_insecure_images' ), 999 );
 		add_filter( 'manage_posts_columns',         array( $this, 'add_posts_column_ssl_status' ) );
 		add_filter( 'manage_pages_columns',         array( $this, 'add_posts_column_ssl_status' ) );
 		add_filter( 'set_url_scheme',               array( $this, 'filter_url_scheme' ), 10, 3 );
