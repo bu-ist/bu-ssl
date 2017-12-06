@@ -95,6 +95,11 @@ class SSL {
 			'attribute' => 'srcset',
 		),
 		array(
+			'name' => 'picture',
+			'children' => 'source',
+			'attribute' => 'srcset',
+		),
+		array(
 			'name' => 'audio',
 			'attribute' => 'src',
 		),
@@ -424,8 +429,15 @@ class SSL {
 			// Get list of insecure urls.
 			$insecure_urls_per_tag = self::has_insecure_content( $content );
 			if ( $insecure_urls_per_tag ) {
+
+				// Get insecure urls from img and picture tags.
+				$insecure_imgs = $insecure_urls_per_tag['img'] ? $insecure_urls_per_tag['img'] : array();
+				$insecure_pictures = $insecure_urls_per_tag['picture'] ? $insecure_urls_per_tag['picture'] : array();
+
+				// Merge insecure image urls.
+				$insecure_images = array_unique( array_merge( $insecure_imgs, $insecure_pictures ) );
+
 				// If there are insecure images.
-				$insecure_images = $insecure_urls_per_tag['img'];
 				if ( $insecure_images ) {
 					// Create a proxy url and replace the insecure image url with it.
 					foreach ( $insecure_images as $insecure_url ) {
