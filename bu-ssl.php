@@ -306,7 +306,7 @@ class SSL {
 		// Load content into a DOMDocument object.
 		$dom = new \DOMDocument();
 		$dom->loadHTML(
-			mb_convert_encoding( '<div>' . $content . '</div>', 'HTML-ENTITIES', 'UTF-8' )
+			mb_convert_encoding( '<!DOCTYPE html><html lang="en"><body>' . $content . '</body></html>', 'HTML-ENTITIES', 'UTF-8' )
 		);
 
 		// Declare the array which will hold all of the insecure urls.
