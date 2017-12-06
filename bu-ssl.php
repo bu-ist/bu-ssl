@@ -296,10 +296,9 @@ class SSL {
 	 * Searches for insecure content in a post's content
 	 *
 	 * @param string $content The post content.
-	 * @param string $type The type of content we are checking to see if it is insecure or not.
 	 * @return array The array of insecure URLs found.
 	 */
-	public function search_for_insecure_content( $content, $type = 'any' ) {
+	public function search_for_insecure_content( $content ) {
 		// Replace any internal http urls with relative urls.
 		$content = str_replace( get_site_url( null, null, 'http' ), get_site_url( null, null, 'relative' ), $content );
 
