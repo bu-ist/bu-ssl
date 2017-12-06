@@ -78,10 +78,52 @@ class SSL {
 		'override_url_scheme'       => true,
 		'content_security_policy'   => "default-src https: 'unsafe-inline' 'unsafe-eval'",
 		'csp_report_url'            => '',
-		// regex adopted from @imme_emosol https://mathiasbynens.be/demo/url-regex .
-		'http_img_regex'            => '@<img.*src\s{0,4}=.{0,4}(http:\/\/[^\s\/$.?#].[^\s\'"]*).+>@iS',
-		// see full list -- https://developer.mozilla.org/en-US/docs/Web/Security/Mixed_content#Types_of_mixed_content .
-		'http_all_regex'            => '@<(img|audio|video|object|iframe|script|link|iframe).*(?:src|data|href)\s{0,4}=.{0,4}(http:\/\/[^\s\/$.?#].[^\s\'"]*).+>@iS',
+	);
+
+	/**
+	 * The html tags that can have insecure content
+	 *
+	 * @var string
+	 */
+	private $tags = array(
+		array(
+			'name' => 'img',
+			'attribute' => 'src',
+		),
+		array(
+			'name' => 'audio',
+			'attribute' => 'src',
+		),
+		array(
+			'name' => 'audio',
+			'children' => 'source',
+			'attribute' => 'src',
+		),
+		array(
+			'name' => 'video',
+			'attribute' => 'src',
+		),
+		array(
+			'name' => 'video',
+			'children' => 'source',
+			'attribute' => 'src',
+		),
+		array(
+			'name' => 'object',
+			'attribute' => 'data',
+		),
+		array(
+			'name' => 'iframe',
+			'attribute' => 'src',
+		),
+		array(
+			'name' => 'script',
+			'attribute' => 'src',
+		),
+		array(
+			'name' => 'link',
+			'attribute' => 'href',
+		),
 	);
 
 	/**
@@ -242,7 +284,7 @@ class SSL {
 	}
 
 	/**
-	 * Searches for insecure content in a post's content.
+	 * Searches for insecure content in a post's content
 	 *
 	 * @param string $content The post content.
 	 * @param string $type The type of content we are checking to see if it is insecure or not.
@@ -252,24 +294,63 @@ class SSL {
 		// Replace any internal http urls with relative urls.
 		$content = str_replace( get_site_url( null, null, 'http' ), get_site_url( null, null, 'relative' ), $content );
 
-		// Use regex to find all remaining insecure urls.
-		// This applies to external urls since we already took care of internal urls above.
-		preg_match_all( $this->options['http_all_regex'], $content, $urls, PREG_SET_ORDER );
+		// Load content into a DOMDocument object.
+		$dom = new \DOMDocument();
+		$dom->loadHTML(
+			mb_convert_encoding( '<div>' . $content . '</div>', 'HTML-ENTITIES', 'UTF-8' )
+		);
 
-		// Filter list of insecure urls.
-		foreach ( $urls as $k => $u ) {
-			// If the url type does not match the specified type, remove it from the $urls array to ignore it.
-			if ( 'any' !== $type && $u[1] !== $type ) {
-				array_splice( $urls, $k, 1 );
+		// Declare the array which will hold all of the insecure urls.
+		$insecure_urls_per_tag = array();
+
+		// Iterate over the specified tags we are going to search for insecure urls.
+		foreach ( $this->tags as $tag ) {
+
+			// Query the content for the specified tag.
+			$dom_node_list = $dom->getElementsByTagName( $tag['name'] );
+
+			// Initilize dom_node_list_array which will hold all of the DOMNodeList's we will check for insecure content.
+			$dom_node_list_array = array();
+
+			// If $tag['children'] is present.
+			if ( $tag['children'] ) {
+				// Get children DOMNodeList's from the base DOMNodeList.
+				foreach ( $dom_node_list as $parent_element ) {
+					$dom_node_list_array[] = $parent_element->getElementsByTagName( $tag['children'] );
+				}
+			} else {
+				// Since there are no children, just add the base DOMNodeList to dom_node_list_array.
+				$dom_node_list_array[] = $dom_node_list;
 			}
 
-			// If the url is internal, ignore it.
-			if ( 0 === strpos( $u[2], get_site_url( null, null, 'http' ) ) ) {
-				array_splice( $urls, $k, 1 );
-			}
-		}
+			// Iterate over all DOMNodeList's.
+			foreach ( $dom_node_list_array as $dom_node_list ) {
+				// Iterate over all elements in DOMNodeList.
+				foreach ( $dom_node_list as $element ) {
+					// Get the url from the specified attribute.
+					$url = $element->getAttribute( $tag['attribute'] );
 
-		return $urls;
+					// If url is not empty.
+					if ( '' !== $url ) {
+
+						// Parse url using the wp_parse_url function.
+						$parsed_url = wp_parse_url( $url );
+
+						// If url is valid and the url scheme is http.
+						if ( false !== $parsed_url && 'http' === $parsed_url['scheme'] ) {
+
+							// If url is not already in $insecure_urls_per_tag, add it to $insecure_urls_per_tag.
+							if ( ! array_key_exists( $tag['name'], $insecure_urls_per_tag ) || ! in_array( $url, $insecure_urls_per_tag[ $tag['name'] ], true ) ) {
+								$insecure_urls_per_tag[ $tag['name'] ][] = $url;
+							}
+						}
+					}
+				} // End foreach().
+			} // End foreach().
+		} // End foreach().
+
+		// Return list of insecure urls.
+		return $insecure_urls_per_tag;
 	}
 
 	public function has_insecure_content( $content = '', $search_type = 'any' ) {
@@ -297,7 +378,6 @@ class SSL {
 	 * @return string The filtered content.
 	 */
 	public function proxy_insecure_images( $content, $force_ssl = false ) {
-		global $post;
 		// If camo is enabled and the site is using SSL or the force SSL parameter is set to true.
 		if ( ! self::is_camo_disabled() && ( is_ssl() || $force_ssl ) ) {
 			// Configure the $camo object.
@@ -305,14 +385,16 @@ class SSL {
 			$camo->setDomain( BU_SSL_CAMO_DOMAIN );
 			$camo->setCamoKey( BU_SSL_CAMO_KEY );
 
-			// Get list of insecure img urls.
-			$urls = self::has_insecure_content( $content, 'img' );
-
-			if ( ! empty( $urls ) ) {
-				// Create a proxy url and replace the insecure url with it.
-				foreach ( $urls as $k => $u ) {
-					$url = $u[2];
-					$content = str_replace( $url, $camo->proxy( $url ), $content );
+			// Get list of insecure urls.
+			$insecure_urls_per_tag = self::has_insecure_content( $content );
+			if ( $insecure_urls_per_tag ) {
+				// If there are insecure images.
+				$insecure_images = $insecure_urls_per_tag['img'];
+				if ( $insecure_images ) {
+					// Create a proxy url and replace the insecure image url with it.
+					foreach ( $insecure_images as $insecure_url ) {
+						$content = str_replace( $insecure_url, $camo->proxy( $insecure_url ), $content );
+					}
 				}
 			}
 		}
