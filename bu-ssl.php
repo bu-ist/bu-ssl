@@ -91,6 +91,10 @@ class SSL {
 			'attribute' => 'src',
 		),
 		array(
+			'name' => 'img',
+			'attribute' => 'srcset',
+		),
+		array(
 			'name' => 'audio',
 			'attribute' => 'src',
 		),
@@ -328,20 +332,30 @@ class SSL {
 				// Iterate over all elements in DOMNodeList.
 				foreach ( $dom_node_list as $element ) {
 					// Get the url from the specified attribute.
-					$url = $element->getAttribute( $tag['attribute'] );
+					$attribute_value = $element->getAttribute( $tag['attribute'] );
 
-					// If url is not empty.
-					if ( '' !== $url ) {
+					// If attribute_value is not empty.
+					if ( '' !== $attribute_value ) {
 
-						// Parse url using the wp_parse_url function.
-						$parsed_url = wp_parse_url( $url );
+						$element_urls = array();
+						if ( 'srcset' === $tag['attribute'] ) {
+							$element_urls = $this->get_urls_from_srcset_attribute( $attribute_value );
+						} else {
+							$element_urls = array( $attribute_value );
+						}
 
-						// If url is valid and the url scheme is http.
-						if ( false !== $parsed_url && 'http' === $parsed_url['scheme'] ) {
+						// Iterate over element_urls.
+						foreach ( $element_urls as $url ) {
+							// Parse url using the wp_parse_url function.
+							$parsed_url = wp_parse_url( $url );
 
-							// If url is not already in $insecure_urls_per_tag, add it to $insecure_urls_per_tag.
-							if ( ! array_key_exists( $tag['name'], $insecure_urls_per_tag ) || ! in_array( $url, $insecure_urls_per_tag[ $tag['name'] ], true ) ) {
-								$insecure_urls_per_tag[ $tag['name'] ][] = $url;
+							// If url is valid and the url scheme is http.
+							if ( false !== $parsed_url && 'http' === $parsed_url['scheme'] ) {
+
+								// If url is not already in $insecure_urls_per_tag, add it to $insecure_urls_per_tag.
+								if ( ! array_key_exists( $tag['name'], $insecure_urls_per_tag ) || ! in_array( $url, $insecure_urls_per_tag[ $tag['name'] ], true ) ) {
+									$insecure_urls_per_tag[ $tag['name'] ][] = $url;
+								}
 							}
 						}
 					}
@@ -351,6 +365,28 @@ class SSL {
 
 		// Return list of insecure urls.
 		return $insecure_urls_per_tag;
+	}
+
+	/**
+	 * Parse urls from html element srcset attribute
+	 *
+	 * @param string $srcset The element's srcset attribute value.
+	 * @return array The urls found in the srcset.
+	 */
+	public function get_urls_from_srcset_attribute( $srcset ) {
+		$srcset_urls = array();
+
+		// Break the srcset value into entries.
+		$srcset_entries = explode( ',', $srcset );
+		// Iterate over srcset_entries.
+		foreach ( $srcset_entries as $srcset_entry ) {
+			$trimmed_srcset_entry = trim( $srcset_entry );
+			// Break the srcset entry into [ url, width ] and add the possible url to $srcset_urls.
+			$srcset_urls[] = explode( ' ', $trimmed_srcset_entry )[0];
+		}
+
+		// Return the urls found.
+		return $srcset_urls;
 	}
 
 	public function has_insecure_content( $content = '', $search_type = 'any' ) {
