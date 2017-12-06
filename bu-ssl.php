@@ -83,7 +83,7 @@ class SSL {
 	/**
 	 * The html tags that can have insecure content
 	 *
-	 * @var string
+	 * @var array
 	 */
 	private $tags = array(
 		array(
