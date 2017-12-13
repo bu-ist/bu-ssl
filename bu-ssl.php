@@ -304,9 +304,11 @@ class SSL {
 
 		// Load content into a DOMDocument object.
 		$dom = new \DOMDocument();
+		libxml_use_internal_errors( true );
 		$dom->loadHTML(
 			mb_convert_encoding( '<!DOCTYPE html><html lang="en"><body>' . $content . '</body></html>', 'HTML-ENTITIES', 'UTF-8' )
 		);
+		libxml_use_internal_errors( false );
 
 		// Declare the array which will hold all of the insecure urls.
 		$insecure_urls_per_tag = array();
@@ -321,7 +323,7 @@ class SSL {
 			$dom_node_list_array = array();
 
 			// If $tag['children'] is present.
-			if ( $tag['children'] ) {
+			if ( array_key_exists( 'children', $tag ) ) {
 				// Get children DOMNodeList's from the base DOMNodeList.
 				foreach ( $dom_node_list as $parent_element ) {
 					$dom_node_list_array[] = $parent_element->getElementsByTagName( $tag['children'] );
