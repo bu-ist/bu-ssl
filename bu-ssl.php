@@ -393,17 +393,11 @@ class SSL {
 	 * Checks if post has insecure content
 	 *
 	 * @param string $post_id The post ID.
-	 * @param string $search_type The type of html tags to search for. Default is 'any'.
 	 * @return array The array of insecure urls.
 	 */
-	public function has_insecure_content( $post_id, $search_type = 'any' ) {
+	public function has_insecure_content( $post_id ) {
 		// Get base post_meta_key from options.
 		$meta_key = $this->options['post_meta_key'];
-
-		// If searching for a specific type of tag, append it to the post_meta_key.
-		if ( 'any' !== $search_type ) {
-			$meta_key .= "_$search_type";
-		}
 
 		// Get post meta for insecure urls if it exists. Else, search for insecure content and update post meta.
 		if ( metadata_exists( 'post', $post_id, $meta_key ) ) {
