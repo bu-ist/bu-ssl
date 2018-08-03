@@ -296,7 +296,6 @@ class SSL {
 			// Search for insecure content.
 			$urls = self::search_for_insecure_content( $post->post_content, $search_type );
 
-			// Update post meta.
 			update_post_meta( $post_id, $meta_key, $urls );
 		}
 
