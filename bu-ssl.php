@@ -430,6 +430,8 @@ class SSL {
 	 * @return string The filtered content.
 	 */
 	public function proxy_insecure_images( $content, $force_ssl = false ) {
+		global $post;
+
 		// If camo is enabled and the site is using SSL or the force SSL parameter is set to true.
 		if ( ! self::is_camo_disabled() && ( is_ssl() || $force_ssl ) ) {
 			// Configure the $camo object.
@@ -438,7 +440,7 @@ class SSL {
 			$camo->setCamoKey( BU_SSL_CAMO_KEY );
 
 			// Get list of insecure urls.
-			$insecure_urls_per_tag = self::has_insecure_content( $content );
+			$insecure_urls_per_tag = self::has_insecure_content( $post->post_id );
 			if ( $insecure_urls_per_tag ) {
 
 				// Get insecure urls from img and picture tags.
