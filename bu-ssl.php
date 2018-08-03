@@ -154,7 +154,6 @@ class SSL {
 		add_filter( 'manage_pages_columns',         array( $this, 'add_posts_column_ssl_status' ) );
 		add_filter( 'set_url_scheme',               array( $this, 'filter_url_scheme' ), 10, 3 );
 
-		// Register deactivation hook.
 		register_deactivation_hook( __FILE__, array( $this, 'deactivation_hook' ) );
 
 		// Get saved options from db.
