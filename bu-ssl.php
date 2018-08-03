@@ -442,8 +442,8 @@ class SSL {
 			if ( $insecure_urls_per_tag ) {
 
 				// Get insecure urls from img and picture tags.
-				$insecure_imgs = $insecure_urls_per_tag['img'] ? $insecure_urls_per_tag['img'] : array();
-				$insecure_pictures = $insecure_urls_per_tag['picture'] ? $insecure_urls_per_tag['picture'] : array();
+				$insecure_imgs     = isset( $insecure_urls_per_tag['img'] ) && is_array( $insecure_urls_per_tag['img'] ) ? $insecure_urls_per_tag['img'] : array();
+				$insecure_pictures = isset( $insecure_urls_per_tag['picture'] ) && is_array( $insecure_urls_per_tag['picture'] ) ? $insecure_urls_per_tag['picture'] : array();
 
 				// Merge insecure image urls.
 				$insecure_images = array_unique( array_merge( $insecure_imgs, $insecure_pictures ) );
