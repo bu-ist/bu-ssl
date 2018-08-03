@@ -275,11 +275,9 @@ class SSL {
 	 * @return void
 	 */
 	public function display_posts_column_ssl_status( $column, $post_id ) {
-		global $post;
-
 		if ( 'bu-ssl' === $column ) {
 			// Check if the post has insecure content and display appropriate icon.
-			echo count( self::has_insecure_content( $post->post_content ) ) ? '&#10071;' : '&#9989;';
+			echo count( self::has_insecure_content( $post_id ) ) ? '&#10071;' : '&#9989;';
 		}
 	}
 
@@ -395,20 +393,36 @@ class SSL {
 		return $srcset_urls;
 	}
 
-	public function has_insecure_content( $content = '', $search_type = 'any' ) {
+	/**
+	 * Checks if post has insecure content
+	 *
+	 * @param string $post_id The post ID.
+	 * @param string $search_type The type of html tags to search for. Default is 'any'.
+	 * @return array The array of insecure urls.
+	 */
+	public function has_insecure_content( $post_id, $search_type = 'any' ) {
+		// Get base post_meta_key from options.
 		$meta_key = $this->options['post_meta_key'];
 
+		// If searching for a specific type of tag, append it to the post_meta_key.
 		if ( 'any' !== $search_type ) {
 			$meta_key .= "_$search_type";
 		}
 
-		$urls = get_post_meta( $post_id, $meta_key, true );
+		// Get post meta for insecure urls if it exists. Else, search for insecure content and update post meta.
+		if ( metadata_exists( 'post', $post_id, $meta_key ) ) {
+			$urls = get_post_meta( $post_id, $meta_key, true );
+		} else {
+			// Get the post object from the post id.
+			$post = get_post( $post_id );
 
-		if ( false === $urls ) {
-			$urls = self::search_for_insecure_content( $content, $search_type );
-			self::do_update_postmeta( $meta_key, $post_id, $urls );
+			// Search for insecure content.
+			$urls = self::search_for_insecure_content( $post->post_content, $search_type );
+
+			update_post_meta( $post_id, $meta_key, $urls );
 		}
 
+		// Return the insecure urls array.
 		return $urls;
 	}
 
@@ -469,21 +483,9 @@ class SSL {
 		$urls = self::search_for_insecure_content( $post->post_content );
 
 		// Update post meta with list of insecure urls.
-		self::do_update_postmeta( $this->options['post_meta_key'], $post_id, $urls );
+		update_post_meta( $post_id, $this->options['post_meta_key'], $urls );
 
 		return $urls;
-	}
-
-	/**
-	 * Updates the postmeta
-	 *
-	 * @param string $meta_key The meta key.
-	 * @param int    $post_id The post id.
-	 * @param array  $urls The array of insecure urls.
-	 * @return void
-	 */
-	public function do_update_postmeta( $meta_key, $post_id, $urls ) {
-		update_post_meta( $meta_key, $post_id, $this->options['post_meta_key'], $urls );
 	}
 
 	/**
@@ -493,7 +495,7 @@ class SSL {
 	 */
 	public function maybe_editor_warning() {
 		global $post;
-		if ( count( self::has_insecure_content( $post->post_content ) ) ) {
+		if ( count( self::has_insecure_content( $post->ID ) ) ) {
 			$message = __( '&#x1F513; This post contains content loaded over an insecure connection.' );
 			// $message .= __( ' These images will be filtered through a <a href="#">secure image proxy</a>.' );
 			printf(
