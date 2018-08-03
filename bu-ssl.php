@@ -81,7 +81,7 @@ class SSL {
 	);
 
 	/**
-	 * The html tags that can have insecure content
+	 * The html tags that might have insecure content we'll want to proxy or warn about
 	 *
 	 * @var array
 	 */
@@ -320,9 +320,8 @@ class SSL {
 			// Initilize dom_node_list_array which will hold all of the DOMNodeList's we will check for insecure content.
 			$dom_node_list_array = array();
 
-			// If $tag['children'] is present.
+			// Get any children's DOMNodeList's from the base DOMNodeList.
 			if ( array_key_exists( 'children', $tag ) ) {
-				// Get children DOMNodeList's from the base DOMNodeList.
 				foreach ( $dom_node_list as $parent_element ) {
 					$dom_node_list_array[] = $parent_element->getElementsByTagName( $tag['children'] );
 				}
@@ -338,7 +337,6 @@ class SSL {
 					// Get the url from the specified attribute.
 					$attribute_value = $element->getAttribute( $tag['attribute'] );
 
-					// If attribute_value is not empty.
 					if ( '' !== $attribute_value ) {
 
 						$element_urls = array();
@@ -348,9 +346,7 @@ class SSL {
 							$element_urls = array( $attribute_value );
 						}
 
-						// Iterate over element_urls.
 						foreach ( $element_urls as $url ) {
-							// Parse url using the wp_parse_url function.
 							$parsed_url = wp_parse_url( $url );
 
 							// If url is valid and the url scheme is http.
@@ -452,7 +448,6 @@ class SSL {
 				// Merge insecure image urls.
 				$insecure_images = array_unique( array_merge( $insecure_imgs, $insecure_pictures ) );
 
-				// If there are insecure images.
 				if ( $insecure_images ) {
 					// Create a proxy url and replace the insecure image url with it.
 					foreach ( $insecure_images as $insecure_url ) {
