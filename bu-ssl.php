@@ -154,6 +154,8 @@ class SSL {
 		add_filter( 'manage_pages_columns',         array( $this, 'add_posts_column_ssl_status' ) );
 		add_filter( 'set_url_scheme',               array( $this, 'filter_url_scheme' ), 10, 3 );
 
+		register_deactivation_hook( __FILE__, array( $this, 'deactivation_hook' ) );
+
 		// Get saved options from db.
 		$saved_options = get_option( 'bu_ssl_settings' );
 
@@ -288,6 +290,16 @@ class SSL {
 	 */
 	public function remove_all_postmeta() {
 		return delete_post_meta_by_key( $this->options['post_meta_key'] );
+	}
+
+	/**
+	 * Performs graceful plugin deactivation.
+	 *
+	 * @return void
+	 */
+	public function deactivation_hook() {
+		// Remove all post meta on deactivation.
+		$this->remove_all_postmeta();
 	}
 
 	/**
