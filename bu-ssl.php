@@ -12,7 +12,7 @@
  * Plugin Name: BU SSL
  * Plugin URI: http://www.bu.edu/tech/
  * Description: Hi, I help transition WordPress sites to SSL.
- * Version: 0.1
+ * Version: 1.0.0-rc.1
  * Author: Boston University IS&T
  * Author URI: http://www.bu.edu/tech/
  * Contributors: Andrew Bauer
@@ -22,7 +22,7 @@
 namespace BU\WordPress\Plugins;
 
 // Specify plugin version with a constant.
-define( 'BU_SSL_VERSION', '0.1' );
+define( 'BU_SSL_VERSION', '1.0.0-rc.1' );
 
 // Set BU_SSL_DEBUG to true if you want to enable debugging.
 // Note: This flag seems to not be used anywhere at the moment.
